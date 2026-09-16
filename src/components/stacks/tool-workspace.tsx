@@ -322,7 +322,7 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
     <div className="mt-5 space-y-3">
       {premium ? (
         <div className="rounded-2xl border border-line bg-navy/50 px-4 py-3 text-sm text-muted">
-          <p className="font-semibold text-fg">Visitor wallet — not Super Admin</p>
+          <p className="font-semibold text-fg">Visitor wallet. Not Super Admin.</p>
           <p className="mt-1">
             Premium tool · {cost} generation{cost === 1 ? "" : "s"} per run. Register as a visitor, pay in crypto, wait for approval. This login never opens Studio.
           </p>

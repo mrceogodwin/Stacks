@@ -130,7 +130,7 @@ export function AccountDesk() {
         <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Visitor account</p>
         <h1 className="font-display text-4xl font-semibold tracking-tight">Register & wallet</h1>
         <p className="mt-3 max-w-xl text-muted">
-          This is a visitor login for Premium tools — not Super Admin. Create an email account, send crypto, submit the amount.
+          This is a visitor login for Premium tools. Not Super Admin. Create an email account, send crypto, submit the amount.
           The owner approves. Generations land here. The owner console stays locked.
         </p>
 
@@ -207,7 +207,7 @@ export function AccountDesk() {
             <div className="glass-card rounded-3xl p-6">
               <h2 className="font-display text-xl font-semibold">Pay in crypto</h2>
               <p className="mt-2 text-sm text-muted">
-                Send to an address the owner has published. Then submit the amount. Default rate: {rate} generations per 1 USD equivalent. Approval is manual — that is how Stacks stays online.
+                Send to an address the owner has published. Then submit the amount. Default rate: {rate} generations per 1 USD equivalent. Approval is manual. That is how Stacks stays online.
               </p>
               <ul className="mt-4 space-y-2 text-sm">
                 {addresses.map((a) => (

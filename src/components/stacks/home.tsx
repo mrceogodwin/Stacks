@@ -29,12 +29,14 @@ import { SiteFooter } from "@/components/stacks/site-footer";
 import { SoundsSection } from "@/components/stacks/sounds-section";
 import { InstallSection } from "@/components/stacks/install-section";
 import { publicToolPrices, peekPremiumSession } from "@/lib/premium";
+import { DailyTools } from "@/components/stacks/daily-tools";
 
 type Detail = { kind: "app" | "tool"; item: StacksApp | StacksTool };
 
 const SECTIONS = [
   { id: "top", label: "Home" },
   { id: "apps", label: "Apps I Built" },
+  { id: "daily", label: "Daily Tools" },
   { id: "tools", label: "500+ Tools" },
   { id: "premium", label: "Premium" },
   { id: "sounds", label: "Sounds" },
@@ -216,25 +218,30 @@ export function StacksHome() {
       ) : null}
 
       <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg-deep/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[4.75rem] w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <a
-            href="#top"
-            className="shrink-0"
-            onClick={() => {
-              setMenuOpen(false);
-              const now = Date.now();
-              if (now - logoTaps.current.t > 2800) logoTaps.current.n = 0;
-              logoTaps.current.t = now;
-              logoTaps.current.n += 1;
-              if (logoTaps.current.n >= 7) {
-                logoTaps.current.n = 0;
-                window.location.assign("/command");
-              }
-            }}
-          >
-            <StacksLogo />
-          </a>
-          <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
+        <div className="mx-auto flex h-[4.75rem] w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <a
+              href="#top"
+              className="shrink-0"
+              onClick={() => {
+                setMenuOpen(false);
+                const now = Date.now();
+                if (now - logoTaps.current.t > 2800) logoTaps.current.n = 0;
+                logoTaps.current.t = now;
+                logoTaps.current.n += 1;
+                if (logoTaps.current.n >= 7) {
+                  logoTaps.current.n = 0;
+                  window.location.assign("/command");
+                }
+              }}
+            >
+              <StacksLogo />
+            </a>
+            <a href="/account" className="register-orbit shrink-0">
+              Register
+            </a>
+          </div>
+          <nav className="hidden items-center gap-6 text-sm text-muted lg:flex">
             {SECTIONS.map((s) => (
               <a
                 key={s.id}
@@ -251,37 +258,27 @@ export function StacksHome() {
               </a>
             ))}
           </nav>
-          <a
-            href="#apps"
-            className="hidden items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-sm font-semibold text-fg transition hover:border-primary-bright/40 md:inline-flex"
-          >
-            Explore Apps
-            <ArrowRight className="size-4" />
-          </a>
-          <ThemeToggle className="hidden size-9 place-items-center rounded-full border border-line text-muted hover:text-fg md:grid" />
-          <a
-            href="/account"
-            className="shrink-0 rounded-full bg-primary px-3 py-2 text-sm font-semibold text-fg md:hidden"
-          >
-            Register
-          </a>
-          <a
-            href="/account"
-            className="hidden shrink-0 rounded-full border border-line px-3 py-2 text-sm font-semibold text-muted hover:text-fg md:inline-flex"
-          >
-            Register / Sign in
-          </a>
-          <button
-            type="button"
-            className="grid size-11 place-items-center rounded-xl border border-line md:hidden"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="#apps"
+              className="hidden items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold text-fg transition hover:border-primary-bright/40 md:inline-flex"
+            >
+              Explore Apps
+              <ArrowRight className="size-4" />
+            </a>
+            <ThemeToggle className="hidden size-9 place-items-center rounded-full border border-line text-muted hover:text-fg md:grid" />
+            <button
+              type="button"
+              className="grid size-11 place-items-center rounded-xl border border-line lg:hidden"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+          </div>
         </div>
         {menuOpen ? (
-          <nav className="flex flex-col gap-1 border-t border-white/5 bg-bg-deep/95 px-4 py-4 md:hidden">
+          <nav className="flex flex-col gap-1 border-t border-white/5 bg-bg-deep/95 px-4 py-4 lg:hidden">
             {SECTIONS.map((s) => (
               <a
                 key={s.id}
@@ -453,6 +450,8 @@ export function StacksHome() {
           </div>
         </section>
 
+        <DailyTools />
+
         <section id="tools" className="px-4 py-16 sm:px-6">
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-8 text-center">
@@ -560,7 +559,7 @@ export function StacksHome() {
                 Premium <span className="text-primary-bright">Tools</span>
               </h2>
               <p className="mx-auto mt-3 max-w-lg text-muted">
-                Visitor accounts only — never the owner console. Create an email login, pay in crypto, submit the amount.
+                Visitor accounts only. Never the owner console. Create an email login, pay in crypto, submit the amount.
                 When it is approved, generations land in your wallet.
               </p>
               <div className="premium-wallet mx-auto mt-6 max-w-xl rounded-[1.6rem] px-5 py-5 text-left">
@@ -658,7 +657,7 @@ export function StacksHome() {
                 <ul className="mt-5 space-y-2 text-sm text-muted">
                   {[
                     "First look when a new app ships",
-                    "Direct from Stacks.ng — not a list mill",
+                    "Direct from Stacks.ng. Not a list mill",
                     "Leave any time. Your email stays private",
                   ].map((line) => (
                     <li key={line} className="flex items-start gap-2.5">

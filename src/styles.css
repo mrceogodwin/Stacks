@@ -522,6 +522,119 @@ html[data-theme="light"] .bg-primary {
   box-shadow: var(--shadow-border);
 }
 
+@property --orbit {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.register-orbit {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.15rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.28rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  background: transparent;
+  isolation: isolate;
+}
+
+.register-orbit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 1.5px;
+  background: conic-gradient(from var(--orbit), #2ee59d, transparent 28%, #008751 55%, transparent 72%, #2ee59d);
+  animation: register-orbit 2.6s linear infinite;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+@keyframes register-orbit {
+  to {
+    --orbit: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .register-orbit::before {
+    animation: none;
+    background: linear-gradient(#2ee59d, #008751);
+  }
+}
+
+.os-card {
+  display: flex;
+  min-height: 16rem;
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 1.25rem;
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-navy) 88%, transparent);
+  padding: 1.5rem 1.4rem 1.35rem;
+  transition: border-color 180ms ease;
+}
+
+.os-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary-bright) 45%, var(--color-line));
+}
+
+.os-logo {
+  display: grid;
+  width: 4.25rem;
+  height: 4.25rem;
+  place-items-center: center;
+  place-items: center;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+}
+
+.os-logo-ios {
+  color: var(--color-fg);
+  background: color-mix(in srgb, var(--color-navy) 70%, #111);
+}
+
+.os-logo-android {
+  color: #3ddc84;
+  background: color-mix(in srgb, var(--color-navy) 70%, #111);
+}
+
+html[data-theme="light"] .os-logo-ios {
+  color: #111;
+  background: #fff;
+}
+
+html[data-theme="light"] .os-logo-android {
+  color: #188038;
+  background: #fff;
+}
+
+html[data-studio="1"] {
+  --color-bg: #07080a;
+  --color-bg-deep: #07080a;
+  --color-navy: #0c1010;
+  --color-fg: #e8ece9;
+}
+
+.studio-shell {
+  min-height: 100vh;
+  background: #07080a;
+  color: #e8ece9;
+}
+
+.studio-rail {
+  border-right: 1px solid #1c2320;
+  background: #090b0c;
+}
+
 html[data-theme="light"] .install-panel {
   background:
     radial-gradient(720px 280px at 90% 0%, rgb(0 135 81 / 0.12), transparent 60%),

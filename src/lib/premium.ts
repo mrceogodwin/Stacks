@@ -78,8 +78,7 @@ export async function requireStudioOwner(
   await ensurePremiumTables(sql);
   const owners = await sql<{ user_id: string }>`select user_id from studio_owners`;
   if (!owners.length) {
-    await sql`insert into studio_owners (user_id) values (${userId}) on conflict do nothing`;
-    return;
+    throw new Error("Studio owner is not set. Use the owner login.");
   }
   if (!owners.some((row) => row.user_id === userId)) {
     throw new Error("Studio is locked to the owner account.");
@@ -93,10 +92,7 @@ export const amIStudioOwner = createServerFn({ method: "GET" })
     const sql = await getSql();
     await ensurePremiumTables(sql);
     const owners = await sql<{ user_id: string }>`select user_id from studio_owners`;
-    if (!owners.length) {
-      await sql`insert into studio_owners (user_id) values (${context.userId}) on conflict do nothing`;
-      return { owner: true as const };
-    }
+    if (!owners.length) return { owner: false as const };
     return { owner: owners.some((row) => row.user_id === context.userId) };
   });
 

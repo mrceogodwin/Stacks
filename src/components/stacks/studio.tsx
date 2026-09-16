@@ -47,17 +47,48 @@ import {
   replyTicket,
 } from "@/lib/premium";
 import { deleteStudioPack, listStudioPacks, saveStudioPack } from "@/lib/packs";
+import {
+  broadcastNote,
+  listActivity,
+  ownerSecurity,
+  rotateOwnerPassword,
+  saveOwnerUsername,
+  setWalletGens,
+} from "@/lib/studio-owner";
 import { IconBlock } from "@/components/stacks/icon-block";
-import { StacksLogo } from "@/components/stacks/logo";
-import { ThemeToggle } from "@/components/stacks/theme-toggle";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 
-type Tab = "apps" | "tools" | "keys" | "list" | "pay" | "people" | "packs" | "inbox";
+type Tab =
+  | "home"
+  | "apps"
+  | "tools"
+  | "keys"
+  | "list"
+  | "pay"
+  | "people"
+  | "packs"
+  | "inbox"
+  | "broadcast"
+  | "security";
+
+const RAIL: { id: Tab; label: string }[] = [
+  { id: "home", label: "Overview" },
+  { id: "apps", label: "Apps" },
+  { id: "tools", label: "AI tools" },
+  { id: "keys", label: "API keys" },
+  { id: "pay", label: "Payments" },
+  { id: "people", label: "Members" },
+  { id: "packs", label: "Sounds" },
+  { id: "inbox", label: "Inbox" },
+  { id: "list", label: "Emails" },
+  { id: "broadcast", label: "Broadcast" },
+  { id: "security", label: "Security" },
+];
 
 export function StudioAdmin() {
   const { user, isPending } = useCurrentUserState();
-  const [tab, setTab] = useState<Tab>("apps");
+  const [tab, setTab] = useState<Tab>("home");
   const [apps, setApps] = useState<StudioApp[]>([]);
   const [tools, setTools] = useState<StudioTool[]>([]);
   const [keys, setKeys] = useState<StudioKey[]>([]);
@@ -88,6 +119,12 @@ export function StudioAdmin() {
   }
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-studio", "1");
+    document.documentElement.setAttribute("data-theme", "dark");
+    return () => document.documentElement.removeAttribute("data-studio");
+  }, []);
+
+  useEffect(() => {
     if (user) {
       void amIStudioOwner()
         .then((res) => setOwner(res.owner))
@@ -115,124 +152,118 @@ export function StudioAdmin() {
   }
 
   return (
-    <div className="relative min-h-screen bg-bg-deep text-fg">
-      <div className="stacks-atmosphere pointer-events-none fixed inset-0" aria-hidden="true" />
-      <header className="relative z-10 border-b border-white/5 bg-bg-deep/55 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <StacksLogo />
+    <div className="studio-shell">
+      <div className="flex min-h-screen">
+        <aside className="studio-rail hidden w-56 shrink-0 flex-col py-6 lg:flex">
+          <div className="px-4">
+            <p className="font-mono text-[0.65rem] tracking-[0.22em] text-primary-bright uppercase">Owner</p>
+            <p className="mt-1 text-sm font-semibold">Stacks console</p>
+          </div>
+          <nav className="mt-6 flex flex-1 flex-col gap-0.5 px-2">
+            {RAIL.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "rounded-lg px-3 py-2 text-left text-sm",
+                  tab === item.id ? "bg-primary/20 text-primary-bright" : "text-muted hover:text-fg",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <div className="px-4 text-xs text-dim">
+            <Link to="/" className="hover:text-fg">
+              Public site
             </Link>
-            <span className="text-xs tracking-[0.2em] text-primary-bright uppercase">Studio</span>
           </div>
-          <div className="flex items-center gap-3">
-            <a href="https://stacks.ng" className="hidden text-sm text-muted sm:block">
-              stacks.ng
-            </a>
-            <ThemeToggle />
+        </aside>
+        <div className="min-w-0 flex-1">
+          <header className="flex items-center justify-between border-b border-line px-4 py-4">
+            <div>
+              <p className="font-mono text-[0.65rem] tracking-[0.2em] text-primary-bright uppercase">Super admin</p>
+              <h1 className="font-display text-xl font-semibold">Control room</h1>
+            </div>
             <UserButton />
+          </header>
+          <div className="flex gap-1 overflow-x-auto border-b border-line px-3 py-2 lg:hidden">
+            {RAIL.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold",
+                  tab === item.id ? "bg-primary text-fg" : "border border-line text-muted",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="px-4 py-6 lg:px-8">
+            {status ? <p className="mb-4 text-sm text-primary-bright">{status}</p> : null}
+            {tab === "home" ? (
+              <OverviewPanel
+                apps={apps.length}
+                tools={tools.length}
+                ready={readyCount}
+                downloads={totals.downloads}
+                uses={totals.uses}
+                keys={`${keys.length}/${KEY_CAP}`}
+                subs={subs.length}
+                onImport={async () => {
+                  try {
+                    const res = await seedStudioCatalog();
+                    setStatus(res.seeded ? "Starter catalog imported." : "Catalog already in your studio.");
+                    await refresh();
+                  } catch (err: unknown) {
+                    setStatus(err instanceof Error ? err.message : "Import failed.");
+                  }
+                }}
+              />
+            ) : null}
+            {tab === "apps" ? <AppsPanel apps={apps} onChange={refresh} /> : null}
+            {tab === "tools" ? (
+              <ToolsPanel
+                tools={tools}
+                keys={keys}
+                platformGrok={platformGrok}
+                onChange={refresh}
+                onStatus={setStatus}
+              />
+            ) : null}
+            {tab === "keys" ? <KeysPanel keys={keys} onChange={refresh} onStatus={setStatus} /> : null}
+            {tab === "pay" ? <PremiumPanel onStatus={setStatus} /> : null}
+            {tab === "people" ? <MembersPanel /> : null}
+            {tab === "packs" ? <PacksPanel onStatus={setStatus} /> : null}
+            {tab === "inbox" ? <InboxPanel onStatus={setStatus} /> : null}
+            {tab === "broadcast" ? <BroadcastPanel onStatus={setStatus} /> : null}
+            {tab === "security" ? <SecurityPanel onStatus={setStatus} /> : null}
+            {tab === "list" ? (
+              <div className="glass-card rounded-3xl p-5">
+                <h2 className="font-display text-xl font-semibold">New-app updates</h2>
+                <p className="mt-1 mb-4 text-sm text-muted">
+                  People who asked to hear when you publish a new app. {subs.length} on the list.
+                </p>
+                {subs.length === 0 ? (
+                  <p className="text-sm text-dim">Nobody yet.</p>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {subs.map((s) => (
+                      <li key={s.email} className="flex justify-between gap-4 border-b border-line py-2">
+                        <span>{s.email}</span>
+                        <span className="text-dim">{s.created_at.slice(0, 10)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
-      </header>
-
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
-        <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">
-          Super admin · stacks.ng
-        </p>
-        <h1 className="font-display text-3xl font-semibold">The control room</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Upload apps, thumbnails, how-it-works films, download links, prompts, and up to {KEY_CAP} API keys.
-          Visitors never see this screen.
-        </p>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6">
-          <Stat label="Apps" value={String(apps.length)} hint="Live in the gallery" />
-          <Stat label="Tools" value={String(tools.length)} hint={`${readyCount} ready to run`} />
-          <Stat label="Downloads" value={String(totals.downloads)} hint="Apps opened on the public site" />
-          <Stat label="Tool runs" value={String(totals.uses)} hint="Times a tool was opened" />
-          <Stat label="API keys" value={`${keys.length}/${KEY_CAP}`} hint="Rotate under rate limits" />
-          <Stat label="Updates list" value={String(subs.length)} hint="Emails for new apps" />
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          {(["apps", "tools", "keys", "list", "pay", "people", "packs", "inbox"] as const).map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-semibold capitalize",
-                tab === id ? "bg-primary text-fg" : "border border-line text-muted",
-              )}
-            >
-              {id === "keys"
-                ? `Keys (${keys.length}/${KEY_CAP})`
-                : id === "list"
-                  ? `List (${subs.length})`
-                  : id === "pay"
-                    ? "Premium"
-                    : id === "people"
-                      ? "Members"
-                      : id === "packs"
-                        ? "Packs"
-                        : id === "inbox"
-                          ? "Inbox"
-                          : id}
-            </button>
-          ))}
-          <button
-            type="button"
-            className="rounded-full border border-line px-4 py-2 text-sm"
-            onClick={async () => {
-              try {
-                const res = await seedStudioCatalog();
-                setStatus(res.seeded ? "Starter catalog imported." : "Catalog already in your studio.");
-                await refresh();
-              } catch (err: unknown) {
-                setStatus(err instanceof Error ? err.message : "Import failed.");
-              }
-            }}
-          >
-            Import starter catalog
-          </button>
-        </div>
-        {status ? <p className="mt-3 text-sm text-primary-bright">{status}</p> : null}
-
-        {tab === "apps" ? <AppsPanel apps={apps} onChange={refresh} /> : null}
-        {tab === "tools" ? (
-          <ToolsPanel
-            tools={tools}
-            keys={keys}
-            platformGrok={platformGrok}
-            onChange={refresh}
-            onStatus={setStatus}
-          />
-        ) : null}
-        {tab === "keys" ? <KeysPanel keys={keys} onChange={refresh} onStatus={setStatus} /> : null}
-        {tab === "pay" ? <PremiumPanel onStatus={setStatus} /> : null}
-        {tab === "people" ? <MembersPanel /> : null}
-        {tab === "packs" ? <PacksPanel onStatus={setStatus} /> : null}
-        {tab === "inbox" ? <InboxPanel onStatus={setStatus} /> : null}
-        {tab === "list" ? (
-          <div className="mt-8 glass-card rounded-3xl p-5">
-            <h2 className="font-display text-xl font-semibold">New-app updates</h2>
-            <p className="mt-1 mb-4 text-sm text-muted">
-              People who asked to hear when you publish a new app. {subs.length} on the list.
-            </p>
-            {subs.length === 0 ? (
-              <p className="text-sm text-dim">Nobody yet.</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {subs.map((s) => (
-                  <li key={s.email} className="flex justify-between gap-4 border-b border-line py-2">
-                    <span>{s.email}</span>
-                    <span className="text-dim">{s.created_at.slice(0, 10)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : null}
       </div>
     </div>
   );
@@ -244,6 +275,140 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
       <p className="text-[0.7rem] tracking-[0.18em] text-dim uppercase">{label}</p>
       <p className="mt-1 font-display text-2xl font-semibold">{value}</p>
       <p className="mt-1 text-xs text-muted">{hint}</p>
+    </div>
+  );
+}
+
+function OverviewPanel({
+  apps,
+  tools,
+  ready,
+  downloads,
+  uses,
+  keys,
+  subs,
+  onImport,
+}: {
+  apps: number;
+  tools: number;
+  ready: number;
+  downloads: number;
+  uses: number;
+  keys: string;
+  subs: number;
+  onImport: () => void;
+}) {
+  const [log, setLog] = useState<{ id: number; action: string; detail: string; created_at: string }[]>([]);
+  useEffect(() => {
+    void listActivity()
+      .then(setLog)
+      .catch(() => setLog([]));
+  }, []);
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Apps" value={String(apps)} hint="Live in the gallery" />
+        <Stat label="AI tools" value={String(tools)} hint={`${ready} ready`} />
+        <Stat label="Downloads" value={String(downloads)} hint="Apps opened" />
+        <Stat label="Tool opens" value={String(uses)} hint="Times a card opened" />
+        <Stat label="API keys" value={keys} hint="Rotate under limits" />
+        <Stat label="Update list" value={String(subs)} hint="New-app emails" />
+        <Stat label="Daily tools" value="20" hint="No API. Always on." />
+        <Stat label="Premium set" value={String(PREMIUM_TOOLS.length)} hint="Priced in Payments" />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="rounded-lg border border-line px-4 py-2 text-sm" onClick={onImport}>
+          Import starter catalog
+        </button>
+      </div>
+      <div className="glass-card rounded-2xl p-5">
+        <h2 className="font-display text-lg font-semibold">Activity</h2>
+        {log.length === 0 ? <p className="mt-2 text-sm text-muted">Nothing logged yet.</p> : null}
+        <ul className="mt-3 space-y-2 text-sm">
+          {log.map((row) => (
+            <li key={row.id} className="flex justify-between gap-3 border-b border-line py-2">
+              <span>
+                {row.action} {row.detail}
+              </span>
+              <span className="text-dim">{row.created_at.slice(0, 16).replace("T", " ")}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function BroadcastPanel({ onStatus }: { onStatus: (s: string) => void }) {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  return (
+    <form
+      className="glass-card max-w-xl space-y-3 rounded-2xl p-5"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const res = await broadcastNote({ data: { title, body } });
+        onStatus(`Sent to ${res.sent} wallets.`);
+        setTitle("");
+        setBody("");
+      }}
+    >
+      <h2 className="font-display text-xl font-semibold">Broadcast</h2>
+      <p className="text-sm text-muted">Lands as a notification on every visitor wallet.</p>
+      <input className="field" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+      <textarea className="field min-h-28" required value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message" />
+      <button type="submit" className="h-11 rounded-lg border border-primary-bright/40 px-5 text-sm font-semibold text-primary-bright">
+        Send
+      </button>
+    </form>
+  );
+}
+
+function SecurityPanel({ onStatus }: { onStatus: (s: string) => void }) {
+  const [username, setUsername] = useState("");
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  useEffect(() => {
+    void ownerSecurity().then((s) => setUsername(s.username));
+  }, []);
+  return (
+    <div className="grid max-w-3xl gap-6 lg:grid-cols-2">
+      <form
+        className="glass-card space-y-3 rounded-2xl p-5"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await saveOwnerUsername({ data: { username } });
+          onStatus("Username saved. Use it on the owner login.");
+        }}
+      >
+        <h2 className="font-display text-xl font-semibold">Username</h2>
+        <p className="text-sm text-muted">This is what you type on /login. Not a visitor email.</p>
+        <input className="field" required value={username} onChange={(e) => setUsername(e.target.value)} />
+        <button type="submit" className="h-11 rounded-lg border border-line px-5 text-sm font-semibold">
+          Save username
+        </button>
+      </form>
+      <form
+        className="glass-card space-y-3 rounded-2xl p-5"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const res = await rotateOwnerPassword({ data: { current, next } });
+          if (!res.ok) {
+            onStatus(res.error);
+            return;
+          }
+          setCurrent("");
+          setNext("");
+          onStatus("Password changed.");
+        }}
+      >
+        <h2 className="font-display text-xl font-semibold">Password</h2>
+        <input className="field" type="password" required minLength={8} value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="Current" />
+        <input className="field" type="password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} placeholder="New password" />
+        <button type="submit" className="h-11 rounded-lg border border-line px-5 text-sm font-semibold">
+          Change password
+        </button>
+      </form>
     </div>
   );
 }
@@ -590,8 +755,8 @@ function ToolsPanel({
             </select>
             <select className="field" value={kind} onChange={(e) => setKind(e.target.value as ToolKind)}>
               <option value="chat">Text (emails, copy, SEO)</option>
-              <option value="image">Image — downloads PNG</option>
-              <option value="video">Video — downloads MP4</option>
+              <option value="image">Image. downloads PNG</option>
+              <option value="video">Video. downloads MP4</option>
             </select>
           </div>
           <input
@@ -768,7 +933,7 @@ function KeysPanel({
         >
           <h2 className="font-display text-xl font-semibold">Add an API key</h2>
           <p className="text-sm text-muted">
-            Up to {KEY_CAP} keys. I cannot invent or scrape free keys — every real provider requires an account you own. Paste yours here and replace anytime.
+            Up to {KEY_CAP} keys. I cannot invent or scrape free keys. every real provider requires an account you own. Paste yours here and replace anytime.
           </p>
           <ul className="space-y-1 text-xs text-dim">
             <li>
@@ -796,7 +961,7 @@ function KeysPanel({
               </a>
             </li>
             <li>
-              Cerebras / SambaNova — free Llama chat tiers, same idea: create, paste.
+              Cerebras / SambaNova. free Llama chat tiers, same idea: create, paste.
             </li>
             <li>Video and high-end image need a paid xAI, OpenAI or Together key. There is no honest free video API.</li>
           </ul>
@@ -1116,14 +1281,18 @@ function ToolPricesForm({ onStatus }: { onStatus: (s: string) => void }) {
 function MembersPanel() {
   const [wallets, setWallets] = useState<{ user_id: string; email: string; generations: number; updated_at: string }[]>([]);
   const [paid, setPaid] = useState<{ email: string; amount: string; currency: string; status: string; generations_credit: number; created_at: string }[]>([]);
+  const [editId, setEditId] = useState("");
+  const [editGens, setEditGens] = useState("");
+  async function load() {
+    const res = await listPremiumMembers();
+    setWallets(res.wallets);
+    setPaid(res.paid);
+  }
   useEffect(() => {
-    void listPremiumMembers().then((res) => {
-      setWallets(res.wallets);
-      setPaid(res.paid);
-    });
+    void load();
   }, []);
   return (
-    <div className="mt-8 grid gap-6 lg:grid-cols-2">
+    <div className="mt-2 grid gap-6 lg:grid-cols-2">
       <div className="glass-card rounded-3xl p-5">
         <h2 className="font-display text-xl font-semibold">Premium members</h2>
         <p className="mt-1 mb-4 text-sm text-muted">Visitor wallets only. They cannot open this console.</p>
@@ -1131,11 +1300,29 @@ function MembersPanel() {
         <ul className="space-y-2 text-sm">
           {wallets.map((w) => (
             <li key={w.user_id} className="flex justify-between gap-3 border-b border-line py-2">
-              <span className="min-w-0 truncate">{w.email || w.user_id}</span>
+              <button type="button" className="min-w-0 truncate text-left" onClick={() => { setEditId(w.user_id); setEditGens(String(w.generations)); }}>
+                {w.email || w.user_id}
+              </button>
               <span className="text-dim">{w.generations} gen</span>
             </li>
           ))}
         </ul>
+        {editId ? (
+          <form
+            className="mt-4 flex gap-2"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await setWalletGens({ data: { userId: editId, generations: Math.max(0, parseInt(editGens, 10) || 0) } });
+              setEditId("");
+              await load();
+            }}
+          >
+            <input className="field" value={editGens} onChange={(e) => setEditGens(e.target.value)} />
+            <button type="submit" className="h-11 shrink-0 rounded-lg border border-line px-4 text-sm font-semibold">
+              Set gens
+            </button>
+          </form>
+        ) : null}
       </div>
       <div className="glass-card rounded-3xl p-5">
         <h2 className="font-display text-xl font-semibold">Paid / claims</h2>
@@ -1302,7 +1489,7 @@ function InboxPanel({ onStatus }: { onStatus: (s: string) => void }) {
           {t.reply ? <p className="text-primary-bright">Reply: {t.reply}</p> : null}
           <textarea
             className="field min-h-20"
-            placeholder="Reply — they see this as a notification"
+            placeholder="Reply. They see this as a notification"
             value={draft[t.id] ?? ""}
             onChange={(e) => setDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
           />

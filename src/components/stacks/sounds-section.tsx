@@ -46,7 +46,7 @@ export function SoundsSection() {
               The library the owner <span className="text-primary-bright">places.</span>
             </h2>
             <p className="mt-3 text-muted">
-              These are files made in FL Studio and the studio — not AI filler. Free packs download now.
+              These are files made in FL Studio and the studio. Not AI filler. Free packs download now.
               Premium packs unlock after a visitor account and wallet.
             </p>
           </div>
@@ -77,7 +77,7 @@ export function SoundsSection() {
                 <p className="text-[0.7rem] tracking-[0.16em] text-primary-bright uppercase">Free</p>
                 <h3 className="font-display mt-1 text-xl font-semibold">Free packs</h3>
                 <p className="mt-2 text-sm text-muted">
-                  Download links the owner places — FL Studio sessions, stems, SFX. Not AI filler.
+                  Download links the owner places. FL Studio sessions, stems, SFX. Not AI filler.
                 </p>
               </div>
             </article>
