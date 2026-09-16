@@ -326,9 +326,11 @@ export const subscribeUpdates = createServerFn({ method: "POST" })
 
 export const listSubscribers = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
-  .handler(async () => {
+  .handler(async ({ context }) => {
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
+    const { requireStudioOwner } = await import("@/lib/premium");
+    await requireStudioOwner(sql, context.userId);
     const rows = await sql<{ email: string; created_at: string }>`
       select email, created_at from studio_subscribers order by created_at desc limit 500
     `;
@@ -343,7 +345,7 @@ const appInput = z.object({
   desc: z.string().max(240),
   long: z.string().max(2000),
   url: z.string().max(400),
-  downloadUrl: z.string().max(400).optional(),
+  downloadUrl: z.string().max(1600000).optional(),
   videoUrl: z.string().max(400).optional(),
   tone: z.string().max(20),
   icon: z.string().max(20),
@@ -742,6 +744,12 @@ export const runPublishedTool = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
+    const { isToolPaused, enforceRate } = await import("@/lib/ops");
+    if (await isToolPaused(sql, data.toolId)) {
+      return { ok: false as const, error: "This tool is paused by the owner." };
+    }
+    const rate = await enforceRate(sql, `tool:${context.userId || "anon"}`, context.userId ? 40 : 12);
+    if (!rate.ok) return rate;
     const tools = await sql<ToolRow & { user_id: string }>`
       select id, user_id, name, slug, category, description, long_copy, tone, icon, prompt, provider, published, kind, model
       from studio_tools

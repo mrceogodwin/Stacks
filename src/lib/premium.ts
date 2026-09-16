@@ -124,9 +124,23 @@ export const myWallet = createServerFn({ method: "GET" })
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
     await ensurePremiumTables(sql);
-    const rows = await sql<{ generations: number; email: string }>`
+    const existing = await sql<{ generations: number; email: string }>`
       select generations, email from studio_wallets where user_id = ${context.userId}
     `;
+    if (!existing[0]) {
+      const users = await sql<{ email: string }>`select email from "user" where id = ${context.userId} limit 1`;
+      const email = users[0]?.email ?? "";
+      await sql`
+        insert into studio_wallets (user_id, email, generations)
+        values (${context.userId}, ${email}, 0)
+        on conflict (user_id) do nothing
+      `;
+    }
+    const rows = existing[0]
+      ? existing
+      : await sql<{ generations: number; email: string }>`
+          select generations, email from studio_wallets where user_id = ${context.userId}
+        `;
     const payments = await sql<{
       id: number;
       amount: string;

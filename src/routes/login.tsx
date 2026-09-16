@@ -28,10 +28,14 @@ function Login() {
       const { error: err } = await authClient.signIn.email({
         email: resolved.email,
         password,
-        callbackURL: "/command",
       });
-      if (err) throw new Error(err.message || "Could not sign in");
-      window.location.href = "/command";
+      if (err) throw new Error(err.message || "Wrong username or password.");
+      try {
+        await authClient.getSession();
+      } catch {
+        /* session cookie on deploy */
+      }
+      window.location.assign("/command");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
     } finally {

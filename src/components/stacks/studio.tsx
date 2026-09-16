@@ -56,6 +56,7 @@ import {
   setWalletGens,
 } from "@/lib/studio-owner";
 import { IconBlock } from "@/components/stacks/icon-block";
+import { MonitorPanel, SiteChromePanel } from "@/components/stacks/studio-ops";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 
@@ -70,16 +71,20 @@ type Tab =
   | "packs"
   | "inbox"
   | "broadcast"
-  | "security";
+  | "security"
+  | "monitor"
+  | "chrome";
 
 const RAIL: { id: Tab; label: string }[] = [
   { id: "home", label: "Overview" },
+  { id: "monitor", label: "Power" },
   { id: "apps", label: "Apps" },
   { id: "tools", label: "AI tools" },
   { id: "keys", label: "API keys" },
   { id: "pay", label: "Payments" },
   { id: "people", label: "Members" },
   { id: "packs", label: "Sounds" },
+  { id: "chrome", label: "Site chrome" },
   { id: "inbox", label: "Inbox" },
   { id: "list", label: "Emails" },
   { id: "broadcast", label: "Broadcast" },
@@ -241,6 +246,8 @@ export function StudioAdmin() {
             {tab === "packs" ? <PacksPanel onStatus={setStatus} /> : null}
             {tab === "inbox" ? <InboxPanel onStatus={setStatus} /> : null}
             {tab === "broadcast" ? <BroadcastPanel onStatus={setStatus} /> : null}
+            {tab === "monitor" ? <MonitorPanel onStatus={setStatus} /> : null}
+            {tab === "chrome" ? <SiteChromePanel onStatus={setStatus} /> : null}
             {tab === "security" ? <SecurityPanel onStatus={setStatus} /> : null}
             {tab === "list" ? (
               <div className="glass-card rounded-3xl p-5">
@@ -313,7 +320,7 @@ function OverviewPanel({
         <Stat label="Tool opens" value={String(uses)} hint="Times a card opened" />
         <Stat label="API keys" value={keys} hint="Rotate under limits" />
         <Stat label="Update list" value={String(subs)} hint="New-app emails" />
-        <Stat label="Daily tools" value="20" hint="No API. Always on." />
+        <Stat label="Everyday tools" value="20" hint="Free. Offline in the page." />
         <Stat label="Premium set" value={String(PREMIUM_TOOLS.length)} hint="Priced in Payments" />
       </div>
       <div className="flex flex-wrap gap-2">
@@ -541,7 +548,26 @@ function AppsPanel({ apps, onChange }: { apps: StudioApp[]; onChange: () => Prom
         <textarea className="field min-h-24" placeholder="How it works copy" value={long} onChange={(e) => setLong(e.target.value)} />
         <p className="pt-1 text-xs tracking-[0.16em] text-dim uppercase">Links visitors use</p>
         <input className="field" placeholder="Open app URL  https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <input className="field" placeholder="Download URL  (apk, store, file)" value={downloadUrl} onChange={(e) => setDownloadUrl(e.target.value)} />
+        <input className="field" placeholder="Download URL  (apk, store, file, or ZIP)" value={downloadUrl} onChange={(e) => setDownloadUrl(e.target.value)} />
+        <label className="block text-sm text-muted">
+          Or upload a ZIP (stays as a download on the app card). Keep it small; larger files use the URL.
+          <input
+            type="file"
+            accept=".zip,application/zip"
+            className="mt-2 block w-full text-sm"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 2_000_000) {
+                alert("Keep ZIP uploads under 2MB, or paste a hosted URL.");
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => setDownloadUrl(String(reader.result));
+              reader.readAsDataURL(file);
+            }}
+          />
+        </label>
         <input className="field" placeholder="How it works video URL  (mp4 or YouTube)" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
         <p className="pt-1 text-xs tracking-[0.16em] text-dim uppercase">Look on the gallery</p>
         <div>

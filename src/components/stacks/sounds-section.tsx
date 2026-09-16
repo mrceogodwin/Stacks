@@ -8,6 +8,7 @@ export function SoundsSection() {
   const [lane, setLane] = useState<"all" | "free" | "premium">("all");
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
+  const [shown, setShown] = useState(6);
 
   useEffect(() => {
     void listPublishedPacks()
@@ -15,7 +16,7 @@ export function SoundsSection() {
       .catch(() => setPacks([]));
   }, []);
 
-  const shown = packs.filter((p) => lane === "all" || p.lane === lane);
+  const shownPacks = packs.filter((p) => lane === "all" || p.lane === lane);
 
   async function take(pack: PublicPack) {
     setBusy(pack.id);
@@ -40,13 +41,13 @@ export function SoundsSection() {
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-xl">
             <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">
-              Stacks Sounds & Packs
+              Stacks Sound Engine
             </p>
             <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              The library the owner <span className="text-primary-bright">places.</span>
+              Stacks Sound <span className="text-primary-bright">Engine</span>
             </h2>
             <p className="mt-3 text-muted">
-              These are files made in FL Studio and the studio. Not AI filler. Free packs download now.
+              Files made in FL Studio and the studio. Not AI filler. Free packs download now.
               Premium packs unlock after a visitor account and wallet.
             </p>
           </div>
@@ -67,40 +68,27 @@ export function SoundsSection() {
           </div>
         </div>
 
-        {shown.length === 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <article className="pack-card glass-card overflow-hidden rounded-[1.6rem]">
-              <div className="pack-cover grid h-36 place-items-center">
-                <Music2 className="size-10 text-primary-bright" />
-              </div>
-              <div className="p-5">
-                <p className="text-[0.7rem] tracking-[0.16em] text-primary-bright uppercase">Free</p>
-                <h3 className="font-display mt-1 text-xl font-semibold">Free packs</h3>
-                <p className="mt-2 text-sm text-muted">
-                  Download links the owner places. FL Studio sessions, stems, SFX. Not AI filler.
-                </p>
-              </div>
-            </article>
-            <article className="pack-card glass-card overflow-hidden rounded-[1.6rem]">
-              <div className="pack-cover pack-cover-premium grid h-36 place-items-center">
-                <Lock className="size-10 text-primary-bright" />
-              </div>
-              <div className="p-5">
-                <p className="text-[0.7rem] tracking-[0.16em] text-primary-bright uppercase">Premium</p>
-                <h3 className="font-display mt-1 text-xl font-semibold">Paid unlock</h3>
-                <p className="mt-2 text-sm text-muted">
-                  Visitor wallet pays generations. Then the download link opens. Owner sets the file URL from Studio.
-                </p>
-                <a href="/account" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-fg">
-                  Create visitor account
-                  <ArrowRight className="size-3.5" />
-                </a>
-              </div>
-            </article>
+        {shownPacks.length === 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {["Sessions", "Stems", "SFX"].map((name) => (
+              <article key={name} className="pack-card glass-card overflow-hidden rounded-[1.6rem]">
+                <div className="pack-cover grid h-36 place-items-center">
+                  <Music2 className="size-10 text-primary-bright" />
+                </div>
+                <div className="p-5">
+                  <p className="text-[0.7rem] tracking-[0.16em] text-primary-bright uppercase">Free</p>
+                  <h3 className="font-display mt-1 text-xl font-semibold">{name}</h3>
+                  <p className="mt-2 text-sm text-muted">
+                    Download links the owner places. FL Studio sessions, stems, SFX. Not AI filler.
+                  </p>
+                </div>
+              </article>
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {shown.map((pack) => (
+          <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {shownPacks.slice(0, shown).map((pack) => (
               <article key={pack.id} className="pack-card glass-card overflow-hidden rounded-[1.6rem]">
                 {pack.cover ? (
                   <img src={pack.cover} alt="" className="h-40 w-full object-cover" />
@@ -137,6 +125,18 @@ export function SoundsSection() {
               </article>
             ))}
           </div>
+          {shown < shownPacks.length ? (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold"
+                onClick={() => setShown((n) => Math.min(shownPacks.length, n + 6))}
+              >
+                Load more
+              </button>
+            </div>
+          ) : null}
+          </>
         )}
         {status ? (
           <p className="mt-4 text-sm text-muted">

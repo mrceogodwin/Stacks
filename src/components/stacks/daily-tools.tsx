@@ -126,6 +126,7 @@ function CalcPad() {
 
 export function DailyTools() {
   const [id, setId] = useState<ToolId>("calc");
+  const [shown, setShown] = useState(9);
   const [a, setA] = useState("");
   const [b, setB] = useState("");
   const [c, setC] = useState("");
@@ -433,35 +434,48 @@ export function DailyTools() {
       <div className="mx-auto w-full max-w-6xl">
         <div className="mb-8">
           <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">
-            Quick Stack Daily Tools
+            Everyday Tools Free
           </p>
           <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-            General tools. <span className="text-primary-bright">No API.</span>
+            Everyday Tools <span className="text-primary-bright">&lsquo;Free&rsquo;</span>
           </h2>
           <p className="mt-3 max-w-lg text-muted">
-            Calculator, VAT, grades, units, loans. They run on this page. They work with or without keys.
+            Calculator, VAT, grades, units, loans. They run in this page, in your browser storage. They open instantly. No API. No keys.
           </p>
         </div>
-        <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
-          <div className="flex gap-2 overflow-x-auto pb-2 lg:block lg:space-y-1 lg:overflow-visible">
-            {TOOLS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setId(t.id);
-                  setA("");
-                  setB("");
-                  setC("");
-                }}
-                className={cn(
-                  "min-h-10 shrink-0 rounded-xl border px-3 text-left text-sm font-semibold lg:w-full",
-                  id === t.id ? "border-transparent bg-primary text-fg" : "border-line text-muted",
-                )}
-              >
-                {t.name}
-              </button>
-            ))}
+        <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+          <div>
+            <div className="grid grid-cols-3 gap-2">
+              {TOOLS.slice(0, shown).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setId(t.id);
+                    setA("");
+                    setB("");
+                    setC("");
+                  }}
+                  className={cn(
+                    "min-h-11 rounded-xl border px-2 text-center text-xs font-medium sm:text-sm",
+                    id === t.id ? "border-transparent bg-primary text-fg" : "border-line text-muted",
+                  )}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+            {shown < TOOLS.length ? (
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm font-semibold"
+                  onClick={() => setShown(TOOLS.length)}
+                >
+                  Load more
+                </button>
+              </div>
+            ) : null}
           </div>
           <div className="glass-card rounded-[1.6rem] p-6">
             <div className="mb-5 flex items-start gap-3">

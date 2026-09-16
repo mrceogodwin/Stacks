@@ -69,6 +69,9 @@ export function SiteFooter() {
           <div className="mt-8 flex flex-col gap-3 border-t border-line pt-5 text-sm text-dim sm:flex-row sm:items-center sm:justify-between">
             <p>© 2026 Stacks.ng. All rights reserved.</p>
             <div className="flex flex-wrap gap-4">
+              <a href="#flagship" className="hover:text-fg">
+                Flagship
+              </a>
               <a href="#apps" className="hover:text-fg">
                 Apps
               </a>
@@ -79,7 +82,10 @@ export function SiteFooter() {
                 Premium
               </a>
               <a href="#sounds" className="hover:text-fg">
-                Sounds
+                Sound Engine
+              </a>
+              <a href="#install" className="hover:text-fg">
+                Install
               </a>
               <a href="/account" className="hover:text-fg">
                 Account

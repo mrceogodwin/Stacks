@@ -150,7 +150,9 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
         setStatus(
           "login" in res && res.login
             ? "Premium tools need an account. Open Account, register, pay, then run again."
-            : res.error,
+            : /unauthor|401|403|SQL|ECONN|at |code /i.test(res.error) || res.error.length > 180
+              ? "Could not run that just now. If this is Premium, pay once and wait for approval."
+              : res.error,
         );
         return;
       }

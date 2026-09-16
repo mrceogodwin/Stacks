@@ -39,15 +39,22 @@ export function AccountDesk() {
   const [ticketBody, setTicketBody] = useState("");
 
   async function load() {
-    const [w, info, box] = await Promise.all([myWallet(), publicCryptoInfo(), myInbox()]);
-    setGens(w.generations);
-    setPayments(w.payments);
-    if (w.email) setPayEmail(w.email);
-    setAddresses(info.addresses);
-    setRate(info.gensPerUsd);
-    setNotes(box.notes);
-    setTickets(box.tickets);
-    if (box.notes.some((n) => !n.read)) void markNotesRead();
+    try {
+      const [w, info, box] = await Promise.all([myWallet(), publicCryptoInfo(), myInbox()]);
+      setGens(w.generations);
+      setPayments(w.payments);
+      if (w.email) setPayEmail(w.email);
+      setAddresses(info.addresses);
+      setRate(info.gensPerUsd);
+      setNotes(box.notes);
+      setTickets(box.tickets);
+      setError(null);
+      if (box.notes.some((n) => !n.read)) void markNotesRead();
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : "";
+      if (/unauthor/i.test(raw)) setError("Session expired. Sign in again.");
+      else setError("Could not load your wallet. Refresh the page.");
+    }
   }
 
   useEffect(() => {
@@ -60,7 +67,7 @@ export function AccountDesk() {
         .catch(() => {});
       return;
     }
-    void load().catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not load wallet"));
+    void load();
   }, [user]);
 
   async function onAuth(e: FormEvent) {
@@ -84,7 +91,12 @@ export function AccountDesk() {
         });
         if (err) throw new Error(err.message);
       }
-      window.location.href = "/account";
+      try {
+        await authClient.getSession();
+      } catch {
+        /* cookie path on deploy; bearer on preview */
+      }
+      window.location.assign("/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
     } finally {
@@ -130,7 +142,7 @@ export function AccountDesk() {
         <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Visitor account</p>
         <h1 className="font-display text-4xl font-semibold tracking-tight">Register & wallet</h1>
         <p className="mt-3 max-w-xl text-muted">
-          This is a visitor login for Premium tools. Not Super Admin. Create an email account, send crypto, submit the amount.
+          Visitor login for Premium tools. Create an email account, send crypto, submit the amount.
           The owner approves. Generations land here. The owner console stays locked.
         </p>
 

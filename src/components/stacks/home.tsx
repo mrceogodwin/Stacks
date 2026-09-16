@@ -30,21 +30,27 @@ import { SoundsSection } from "@/components/stacks/sounds-section";
 import { InstallSection } from "@/components/stacks/install-section";
 import { publicToolPrices, peekPremiumSession } from "@/lib/premium";
 import { DailyTools } from "@/components/stacks/daily-tools";
+import { FlagshipTools } from "@/components/stacks/flagship-tools";
+import { HeroType, SiteTicker, ToolMarquee } from "@/components/stacks/site-ticker";
+import { CommunitySection } from "@/components/stacks/community";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
 type Detail = { kind: "app" | "tool"; item: StacksApp | StacksTool };
 
 const SECTIONS = [
   { id: "top", label: "Home" },
-  { id: "apps", label: "Apps I Built" },
-  { id: "daily", label: "Daily Tools" },
+  { id: "flagship", label: "Flagship" },
+  { id: "apps", label: "Apps We Built" },
   { id: "tools", label: "500+ Tools" },
   { id: "premium", label: "Premium" },
-  { id: "sounds", label: "Sounds" },
-  { id: "updates", label: "Updates" },
-  { id: "about", label: "About" },
+  { id: "daily", label: "Everyday" },
+  { id: "sounds", label: "Sound Engine" },
+  { id: "community", label: "Community" },
+  { id: "install", label: "Install" },
 ] as const;
 
 export function StacksHome() {
+  const { user } = useCurrentUserState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("top");
   const [appsShown, setAppsShown] = useState(6);
@@ -219,29 +225,24 @@ export function StacksHome() {
 
       <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg-deep/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <a
-              href="#top"
-              className="shrink-0"
-              onClick={() => {
-                setMenuOpen(false);
-                const now = Date.now();
-                if (now - logoTaps.current.t > 2800) logoTaps.current.n = 0;
-                logoTaps.current.t = now;
-                logoTaps.current.n += 1;
-                if (logoTaps.current.n >= 7) {
-                  logoTaps.current.n = 0;
-                  window.location.assign("/command");
-                }
-              }}
-            >
-              <StacksLogo />
-            </a>
-            <a href="/account" className="register-orbit shrink-0">
-              Register
-            </a>
-          </div>
-          <nav className="hidden items-center gap-6 text-sm text-muted lg:flex">
+          <a
+            href="#top"
+            className="shrink-0"
+            onClick={() => {
+              setMenuOpen(false);
+              const now = Date.now();
+              if (now - logoTaps.current.t > 2800) logoTaps.current.n = 0;
+              logoTaps.current.t = now;
+              logoTaps.current.n += 1;
+              if (logoTaps.current.n >= 7) {
+                logoTaps.current.n = 0;
+                window.location.assign("/command");
+              }
+            }}
+          >
+            <StacksLogo />
+          </a>
+          <nav className="hidden items-center gap-5 text-sm text-muted xl:flex">
             {SECTIONS.map((s) => (
               <a
                 key={s.id}
@@ -259,14 +260,10 @@ export function StacksHome() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <a
-              href="#apps"
-              className="hidden items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold text-fg transition hover:border-primary-bright/40 md:inline-flex"
-            >
-              Explore Apps
-              <ArrowRight className="size-4" />
+            <a href="/account" className="register-orbit shrink-0">
+              {user || wallet.signedIn ? "Account" : "Register"}
             </a>
-            <ThemeToggle className="hidden size-9 place-items-center rounded-full border border-line text-muted hover:text-fg md:grid" />
+            <ThemeToggle className="hidden size-11 place-items-center rounded-xl border border-line text-muted hover:text-fg md:grid" />
             <button
               type="button"
               className="grid size-11 place-items-center rounded-xl border border-line lg:hidden"
@@ -277,6 +274,7 @@ export function StacksHome() {
             </button>
           </div>
         </div>
+        <SiteTicker />
         {menuOpen ? (
           <nav className="flex flex-col gap-1 border-t border-white/5 bg-bg-deep/95 px-4 py-4 lg:hidden">
             {SECTIONS.map((s) => (
@@ -291,10 +289,13 @@ export function StacksHome() {
             ))}
             <a
               href="/account"
-              className="rounded-lg px-3 py-3 text-sm font-semibold text-primary-bright hover:bg-white/5"
+              className="rounded-lg px-3 py-3 text-sm font-medium text-primary-bright hover:bg-white/5"
               onClick={() => setMenuOpen(false)}
             >
-              Register / Sign in
+              {user || wallet.signedIn ? "Open wallet" : "Register / Sign in"}
+            </a>
+            <a href="#install" className="rounded-lg px-3 py-3 text-sm text-muted hover:bg-white/5 hover:text-fg" onClick={() => setMenuOpen(false)}>
+              Add to Home Screen
             </a>
             <div className="mt-2 flex items-center justify-between px-3 py-2">
               <span className="text-sm text-muted">Skin</span>
@@ -304,8 +305,9 @@ export function StacksHome() {
         ) : null}
       </header>
 
-      <main className="relative z-10 pt-[4.75rem]">
-        <section id="top" className="relative overflow-hidden px-4 pb-10 pt-16 sm:px-6 sm:pt-20">
+      <main className="relative z-10 pt-[6.6rem]">
+        <ToolMarquee />
+        <section id="top" className="relative overflow-hidden px-4 pb-10 pt-10 sm:px-6 sm:pt-14">
           <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-12">
             <div>
               <p className="mb-4 font-display text-[0.7rem] font-medium tracking-[0.22em] text-primary-bright uppercase">
@@ -313,13 +315,12 @@ export function StacksHome() {
               </p>
               <h1 className="font-display text-4xl leading-[0.98] font-semibold tracking-tight sm:text-5xl lg:text-6xl">
                 Meet <span className="text-primary-bright">Stacks.</span>
-                <br />
-                One place for
-                <br />
-                everything I build.
+                <span className="mt-3 block text-[0.72em] leading-[1.12] font-medium">
+                  <HeroType />
+                </span>
               </h1>
               <p className="mt-6 max-w-md text-muted">
-                My apps, a library of 500+ tools, and the generation engine that runs them. All in one place.
+                Apps, web apps, prototypes, 500+ tools, and the engine that runs them. Proudly developed by Stacks engineers via prompt engineering.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -342,8 +343,8 @@ export function StacksHome() {
               {playing ? (
                 <video
                   className="film-well"
-                  src="/video/stacks-in-action.mp4?v=13"
-                  poster="/video/poster.jpg?v=13"
+                  src="/video/stacks-in-action.mp4?v=14"
+                  poster="/video/poster.jpg?v=14"
                   controls
                   autoPlay
                   playsInline
@@ -359,7 +360,7 @@ export function StacksHome() {
                   onClick={() => setPlaying(true)}
                   aria-label="Play Stacks video"
                 >
-                  <img src="/video/poster.jpg?v=13" alt="Hello. Welcome to Stacks." className="film-poster" />
+                  <img src="/video/poster.jpg?v=14" alt="Hello. Welcome to Stacks." className="film-poster" />
                   <span className="film-play">
                     <Play className="ml-0.5 size-7 fill-current" />
                   </span>
@@ -376,6 +377,8 @@ export function StacksHome() {
           </div>
         </section>
 
+        <FlagshipTools />
+
         <section id="apps" className="px-4 py-20 sm:px-6">
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-9 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -383,11 +386,11 @@ export function StacksHome() {
                 <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">
                   The collection
                 </p>
-                <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-                  Apps I <span className="text-primary-bright">Built</span>
+                <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-5xl">
+                  Apps, web apps, prototypes, we <span className="text-primary-bright">built</span>
                 </h2>
-                <p className="mt-3 max-w-md text-muted">
-                  Explore the products, experiments and digital experiences I've created with Stacks.
+                <p className="mt-3 max-w-lg text-muted">
+                  Get ZIP files free. Proudly developed by Stacks engineers via prompt engineering.
                 </p>
               </div>
               <a href="#apps" className="inline-flex items-center gap-1.5 text-sm text-primary-bright">
@@ -449,8 +452,6 @@ export function StacksHome() {
             ) : null}
           </div>
         </section>
-
-        <DailyTools />
 
         <section id="tools" className="px-4 py-16 sm:px-6">
           <div className="mx-auto w-full max-w-6xl">
@@ -564,33 +565,33 @@ export function StacksHome() {
               </p>
               <div className="premium-wallet mx-auto mt-6 max-w-xl rounded-[1.6rem] px-5 py-5 text-left">
                 <p className="font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Visitor wallet</p>
-                {wallet.signedIn ? (
+                {wallet.signedIn || user ? (
                   <>
                     <p className="font-display mt-1 text-3xl font-semibold">{wallet.generations} gen</p>
-                    <p className="mt-1 text-sm text-muted">Signed in as a visitor. This is not Super Admin.</p>
+                    <p className="mt-1 text-sm text-muted">Signed in. Pay once, then the 30-day Flagship trial starts after approval.</p>
                     <a href="/account" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-fg">
                       Open wallet
                     </a>
                   </>
                 ) : (
                   <>
-                    <h3 className="font-display mt-1 text-2xl font-semibold">Register here. Not Super Admin.</h3>
+                    <h3 className="font-display mt-1 text-2xl font-semibold">Try Premium Tools</h3>
                     <p className="mt-2 text-sm text-muted">
-                      Email login → pay crypto → owner approves → generations. Studio stays locked.
+                      Register or sign in. Email login, pay crypto, owner approves, generations land. Studio stays locked.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-3">
                       <a
                         href="/account"
                         className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-fg"
                       >
-                        Create visitor account
+                        Register
                         <ArrowRight className="size-4" />
                       </a>
                       <a
                         href="/account"
                         className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold"
                       >
-                        Sign in to wallet
+                        Sign in
                       </a>
                     </div>
                   </>
@@ -638,6 +639,8 @@ export function StacksHome() {
           </div>
         </section>
 
+        <DailyTools />
+
         <SoundsSection />
 
         <section id="updates" className="px-4 pt-8 pb-6 sm:px-6">
@@ -651,7 +654,7 @@ export function StacksHome() {
                   New apps, first.
                 </h2>
                 <p className="mt-3 text-muted">
-                  When I upload a new product to Apps I Built, you get the note. No spam. No dashboard.
+                  When I upload a new product to Apps We Built, you get the note. No spam. No dashboard.
                   Just the work, as it goes live.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm text-muted">
@@ -776,6 +779,7 @@ export function StacksHome() {
         </section>
       </main>
 
+      <CommunitySection />
       <InstallSection />
       <SiteFooter />
 
