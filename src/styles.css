@@ -258,7 +258,7 @@
     background: var(--color-navy);
     color: var(--color-fg);
     padding: 0.7rem 0.9rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
     outline: none;
   }
 
@@ -406,4 +406,143 @@ html[data-theme="light"] .bg-primary {
 
 .film-meta .film-time {
   color: #6d7471;
+}
+
+.social-chip {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  padding: 0 0.9rem 0 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  box-shadow: var(--shadow-border);
+  background: color-mix(in srgb, var(--color-navy) 88%, transparent);
+}
+
+.social-glyph {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  color: #f4f7f5;
+}
+
+.pack-cover {
+  background:
+    radial-gradient(circle at 30% 20%, rgb(46 229 157 / 0.28), transparent 55%),
+    linear-gradient(180deg, #101614, #0a0e0c);
+}
+
+.pack-cover-premium {
+  background:
+    radial-gradient(circle at 70% 30%, rgb(46 229 157 / 0.22), transparent 55%),
+    linear-gradient(180deg, #141a18, #0b100e);
+}
+
+.install-panel {
+  background:
+    radial-gradient(720px 280px at 90% 0%, rgb(46 229 157 / 0.16), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-navy) 70%, transparent), var(--color-surface));
+  box-shadow: var(--shadow-border), 0 24px 50px rgb(0 0 0 / 0.18);
+}
+
+.install-phone {
+  border-radius: 1.5rem;
+  padding: 1.25rem 0.9rem 1rem;
+  background: color-mix(in srgb, var(--color-navy) 80%, transparent);
+  box-shadow: var(--shadow-border);
+  transform: rotateX(8deg) rotateY(-12deg);
+  transform-style: preserve-3d;
+}
+
+.device-tile {
+  position: relative;
+  display: grid;
+  width: 3.4rem;
+  height: 3.4rem;
+  place-items: center;
+  border-radius: 0.95rem;
+  transform: rotateX(16deg) rotateY(-22deg);
+  box-shadow:
+    0 14px 24px rgb(0 0 0 / 0.28),
+    0 0 0 1px rgb(255 255 255 / 0.12);
+}
+
+.device-tile > span,
+.device-ios::after,
+.device-android::after {
+  content: "";
+  position: absolute;
+}
+
+.device-ios {
+  background: linear-gradient(145deg, #f4f6f8, #b8c0c8 58%, #8d959c);
+}
+
+.device-ios::after {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid #1c1c1e;
+  border-radius: 0.35rem 0.9rem 0.35rem 0.9rem;
+  transform: rotate(-18deg);
+}
+
+.device-android {
+  background: linear-gradient(145deg, #b6f54a, #3ddc84 55%, #1faa59);
+}
+
+.device-android::after {
+  width: 1.35rem;
+  height: 0.85rem;
+  border: 2px solid #103018;
+  border-bottom: 0;
+  border-radius: 0.85rem 0.85rem 0 0;
+}
+
+.subscribe-card {
+  overflow: visible;
+}
+
+.subscribe-card .field,
+#updates-email {
+  width: 100%;
+  min-width: 0;
+  font-size: 1rem;
+}
+
+.premium-wallet {
+  background:
+    radial-gradient(520px 180px at 100% 0%, rgb(46 229 157 / 0.14), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-navy) 82%, transparent), var(--color-surface));
+  box-shadow: var(--shadow-border);
+}
+
+html[data-theme="light"] .install-panel {
+  background:
+    radial-gradient(720px 280px at 90% 0%, rgb(0 135 81 / 0.12), transparent 60%),
+    linear-gradient(180deg, #ffffff, #eef3f0);
+}
+
+html[data-theme="light"] .pack-cover,
+html[data-theme="light"] .pack-cover-premium {
+  background:
+    radial-gradient(circle at 30% 20%, rgb(0 135 81 / 0.18), transparent 55%),
+    linear-gradient(180deg, #dce8e1, #c5d4cc);
+}
+
+html[data-theme="light"] .device-tile {
+  box-shadow:
+    0 14px 24px rgb(16 20 18 / 0.12),
+    0 0 0 1px rgb(16 20 18 / 0.08);
+}
+
+html[data-theme="light"] .premium-wallet {
+  background:
+    radial-gradient(520px 180px at 100% 0%, rgb(0 135 81 / 0.1), transparent 60%),
+    linear-gradient(180deg, #ffffff, #eef3f0);
 }

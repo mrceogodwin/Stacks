@@ -25,6 +25,10 @@ import { StacksLogo } from "@/components/stacks/logo";
 import { ThemeToggle } from "@/components/stacks/theme-toggle";
 import { AppWorkspace } from "@/components/stacks/app-workspace";
 import { ToolWorkspace } from "@/components/stacks/tool-workspace";
+import { SiteFooter } from "@/components/stacks/site-footer";
+import { SoundsSection } from "@/components/stacks/sounds-section";
+import { InstallSection } from "@/components/stacks/install-section";
+import { publicToolPrices, peekPremiumSession } from "@/lib/premium";
 
 type Detail = { kind: "app" | "tool"; item: StacksApp | StacksTool };
 
@@ -33,6 +37,7 @@ const SECTIONS = [
   { id: "apps", label: "Apps I Built" },
   { id: "tools", label: "500+ Tools" },
   { id: "premium", label: "Premium" },
+  { id: "sounds", label: "Sounds" },
   { id: "updates", label: "Updates" },
   { id: "about", label: "About" },
 ] as const;
@@ -42,6 +47,9 @@ export function StacksHome() {
   const [active, setActive] = useState("top");
   const [appsShown, setAppsShown] = useState(6);
   const [toolsShown, setToolsShown] = useState(12);
+  const [premiumShown, setPremiumShown] = useState(6);
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  const [wallet, setWallet] = useState<{ signedIn: boolean; generations: number }>({ signedIn: false, generations: 0 });
   const [filter, setFilter] = useState<(typeof TOOL_FILTERS)[number]>("All");
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -89,6 +97,10 @@ export function StacksHome() {
     void listPublishedApps().then(setLiveApps).catch(() => setLiveApps([]));
     void listPublishedTools().then(setLiveTools).catch(() => setLiveTools([]));
     void listCounters().then(setCounts).catch(() => {});
+    void publicToolPrices().then(setPrices).catch(() => {});
+    void peekPremiumSession()
+      .then(setWallet)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -249,9 +261,15 @@ export function StacksHome() {
           <ThemeToggle className="hidden size-9 place-items-center rounded-full border border-line text-muted hover:text-fg md:grid" />
           <a
             href="/account"
-            className="hidden rounded-full border border-line px-3 py-2 text-sm font-semibold text-muted hover:text-fg md:inline-flex"
+            className="shrink-0 rounded-full bg-primary px-3 py-2 text-sm font-semibold text-fg md:hidden"
           >
-            Account
+            Register
+          </a>
+          <a
+            href="/account"
+            className="hidden shrink-0 rounded-full border border-line px-3 py-2 text-sm font-semibold text-muted hover:text-fg md:inline-flex"
+          >
+            Register / Sign in
           </a>
           <button
             type="button"
@@ -276,10 +294,10 @@ export function StacksHome() {
             ))}
             <a
               href="/account"
-              className="rounded-lg px-3 py-3 text-sm text-muted hover:bg-white/5 hover:text-fg"
+              className="rounded-lg px-3 py-3 text-sm font-semibold text-primary-bright hover:bg-white/5"
               onClick={() => setMenuOpen(false)}
             >
-              Account
+              Register / Sign in
             </a>
             <div className="mt-2 flex items-center justify-between px-3 py-2">
               <span className="text-sm text-muted">Skin</span>
@@ -542,46 +560,90 @@ export function StacksHome() {
                 Premium <span className="text-primary-bright">Tools</span>
               </h2>
               <p className="mx-auto mt-3 max-w-lg text-muted">
-                The strongest engines — music, sound, cinematic video, image studio, and Stacks Engine.
-                Register, pay in crypto, submit the amount. The owner approves. Your wallet shows generations left.
+                Visitor accounts only — never the owner console. Create an email login, pay in crypto, submit the amount.
+                When it is approved, generations land in your wallet.
               </p>
-              <a
-                href="/account"
-                className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-fg"
-              >
-                Open wallet
-                <ArrowRight className="size-4" />
-              </a>
+              <div className="premium-wallet mx-auto mt-6 max-w-xl rounded-[1.6rem] px-5 py-5 text-left">
+                <p className="font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Visitor wallet</p>
+                {wallet.signedIn ? (
+                  <>
+                    <p className="font-display mt-1 text-3xl font-semibold">{wallet.generations} gen</p>
+                    <p className="mt-1 text-sm text-muted">Signed in as a visitor. This is not Super Admin.</p>
+                    <a href="/account" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-fg">
+                      Open wallet
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-display mt-1 text-2xl font-semibold">Register here. Not Super Admin.</h3>
+                    <p className="mt-2 text-sm text-muted">
+                      Email login → pay crypto → owner approves → generations. Studio stays locked.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <a
+                        href="/account"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-fg"
+                      >
+                        Create visitor account
+                        <ArrowRight className="size-4" />
+                      </a>
+                      <a
+                        href="/account"
+                        className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold"
+                      >
+                        Sign in to wallet
+                      </a>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {PREMIUM_TOOLS.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  className={cn(
-                    "tool-card glass-card flex items-start gap-3.5 rounded-2xl p-4 text-left transition duration-300 hover:-translate-y-1",
-                    TONE_CLASS[tool.tone],
-                  )}
-                  onClick={() => void openItem("tool", tool)}
-                >
-                  <IconBlock icon={tool.icon} tone={tool.tone} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-display font-semibold">{tool.name}</h3>
-                    <span className="mt-1 inline-flex rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.7rem] text-muted">
-                      Premium · {tool.cost ?? 1} gen
-                    </span>
-                    <p className="mt-1.5 text-sm text-muted">{tool.desc}</p>
-                  </div>
-                  <ArrowRight className="mt-3 size-4 shrink-0 text-dim" />
-                </button>
-              ))}
+              {PREMIUM_TOOLS.slice(0, premiumShown).map((tool) => {
+                const cost = prices[tool.id] || tool.cost || 1;
+                return (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    className={cn(
+                      "tool-card glass-card flex items-start gap-3.5 rounded-2xl p-4 text-left transition duration-300 hover:-translate-y-1",
+                      TONE_CLASS[tool.tone],
+                    )}
+                    onClick={() => void openItem("tool", { ...tool, cost })}
+                  >
+                    <IconBlock icon={tool.icon} tone={tool.tone} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display font-semibold">{tool.name}</h3>
+                      <span className="mt-1 inline-flex rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.7rem] text-muted">
+                        Premium · {cost} gen · {tool.inputs?.length ?? 0} controls
+                      </span>
+                      <p className="mt-1.5 text-sm text-muted">{tool.desc}</p>
+                    </div>
+                    <ArrowRight className="mt-3 size-4 shrink-0 text-dim" />
+                  </button>
+                );
+              })}
             </div>
+            {premiumShown < PREMIUM_TOOLS.length ? (
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold"
+                  onClick={() => setPremiumShown((n) => Math.min(PREMIUM_TOOLS.length, n + 6))}
+                >
+                  Load more Premium
+                  <ChevronDown className="size-4" />
+                </button>
+              </div>
+            ) : null}
           </div>
         </section>
 
+        <SoundsSection />
+
         <section id="updates" className="px-4 pt-8 pb-6 sm:px-6">
           <div className="mx-auto w-full max-w-6xl">
-            <div className="glass-card overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-14">
+            <div className="subscribe-card glass-card rounded-[2rem] px-5 py-10 sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-14">
               <div className="max-w-xl">
                 <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">
                   Subscribe
@@ -609,7 +671,7 @@ export function StacksHome() {
                 </ul>
               </div>
               <form
-                className="mt-8 w-full max-w-md lg:mt-0"
+                className="mt-8 w-full min-w-0 max-w-md lg:mt-0"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   setSubStatus("saving");
@@ -625,25 +687,24 @@ export function StacksHome() {
                 <label className="mb-2 block text-sm font-medium text-fg" htmlFor="updates-email">
                   Email for new-app updates
                 </label>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <input
-                    id="updates-email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="h-12 flex-1 rounded-full border border-line bg-navy px-5 text-sm outline-none focus:border-primary-bright/50"
-                    autoComplete="email"
-                  />
-                  <button
-                    type="submit"
-                    disabled={subStatus === "saving"}
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-fg shadow-[var(--shadow-glow)] disabled:opacity-60"
-                  >
-                    {subStatus === "saving" ? "Saving…" : "Get updates"}
-                  </button>
-                </div>
+                <input
+                  id="updates-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="field"
+                  autoComplete="email"
+                  enterKeyHint="send"
+                />
+                <button
+                  type="submit"
+                  disabled={subStatus === "saving"}
+                  className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-fg shadow-[var(--shadow-glow)] disabled:opacity-60"
+                >
+                  {subStatus === "saving" ? "Saving…" : "Get updates"}
+                </button>
                 <p className="mt-2 text-xs text-dim">Free. Built in Nigeria. Shipped when the work is ready.</p>
               </form>
             </div>
@@ -716,35 +777,8 @@ export function StacksHome() {
         </section>
       </main>
 
-      <footer className="relative z-10 px-4 pb-12 sm:px-6">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 text-sm text-dim sm:flex-row sm:items-center sm:justify-between">
-          <StacksLogo />
-          <p>© 2026 Stacks.ng · Nigeria · Use with care</p>
-          <div className="flex flex-wrap gap-4">
-            <a href="#apps" className="hover:text-fg">
-              Apps
-            </a>
-            <a href="#tools" className="hover:text-fg">
-              Tools
-            </a>
-            <a href="#premium" className="hover:text-fg">
-              Premium
-            </a>
-            <a href="/account" className="hover:text-fg">
-              Account
-            </a>
-            <a href="#about" className="hover:text-fg">
-              About
-            </a>
-            <a href="/terms" className="hover:text-fg">
-              Terms
-            </a>
-            <a href="/privacy" className="hover:text-fg">
-              Privacy
-            </a>
-          </div>
-        </div>
-      </footer>
+      <InstallSection />
+      <SiteFooter />
 
       {detail ? (
         <div

@@ -137,7 +137,7 @@ function mapApp(row: AppRow): StudioApp {
 
 function mapTool(row: ToolRow): StudioTool {
   const kind: ToolKind =
-    row.kind === "image" || row.kind === "video" ? row.kind : kindForCategory(row.category);
+    row.kind === "image" || row.kind === "video" || row.kind === "audio" ? row.kind : kindForCategory(row.category);
   return {
     id: String(row.id),
     name: row.name,
@@ -172,13 +172,25 @@ export const listPublishedTools = createServerFn({ method: "GET" }).handler(asyn
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
   const rows = await sql<ToolRow>`
-    select id, name, slug, category, description, long_copy, tone, icon, prompt, provider, published, kind, model, video_url
+    select id, name, slug, category, description, long_copy, tone, icon, published, kind, video_url
     from studio_tools where published = true
     order by sort_order, id
   `;
   return rows.map((r) => {
-    const t = mapTool(r);
-    return { ...t, prompt: "" };
+    const kind: ToolKind =
+      r.kind === "image" || r.kind === "video" || r.kind === "audio" ? r.kind : kindForCategory(r.category);
+    return {
+      id: r.slug || String(r.id),
+      name: r.name,
+      category: r.category,
+      desc: r.description,
+      long: r.long_copy,
+      tone: asTone(r.tone),
+      icon: asIcon(r.icon),
+      runnable: true,
+      kind,
+      videoUrl: r.video_url || "",
+    };
   });
 });
 
@@ -749,7 +761,11 @@ export const runPublishedTool = createServerFn({ method: "POST" })
         ? rawKind
         : kindForCategory(tool?.category || catalog?.category || "Writing");
     const premium = isPremiumTool(catalog ?? { id: data.toolId, premium: false });
-    const cost = toolCost(catalog ?? { id: data.toolId, kind, premium });
+    let cost = toolCost(catalog ?? { id: data.toolId, kind, premium });
+    const priced = await sql<{ generations: number }>`
+      select generations from studio_tool_prices where tool_id = ${data.toolId} limit 1
+    `.catch(() => [] as { generations: number }[]);
+    if (priced[0]?.generations) cost = priced[0].generations;
     if (premium && !context.userId) {
       return {
         ok: false as const,
@@ -761,15 +777,19 @@ export const runPublishedTool = createServerFn({ method: "POST" })
     const fields = data.fields ?? {};
     if (kind === "audio") {
       const { renderMusic, renderSfx, wavDataUrl } = await import("@/lib/audio-engine");
-      const buf =
-        (catalog?.id || data.toolId) === "sfx-studio"
-          ? renderSfx({ type: fields.type, seconds: fields.seconds })
-          : renderMusic({
-              genre: fields.genre,
-              mood: fields.mood,
-              bpm: fields.bpm,
-              seconds: fields.seconds,
-            });
+      const describe = [fields.prompt, fields.describe, fields.space, fields.intensity, data.input]
+        .filter((v) => typeof v === "string" && v.trim())
+        .join(" ");
+      const isSfx = /sfx|sound|effect/i.test(catalog?.id || data.toolId) || catalog?.id === "sfx-studio";
+      const buf = isSfx
+        ? renderSfx({ type: fields.type, prompt: describe, seconds: fields.seconds })
+        : renderMusic({
+            genre: fields.genre,
+            mood: fields.mood,
+            bpm: fields.bpm,
+            seconds: fields.seconds,
+            prompt: describe,
+          });
       if (premium) {
         const gate = await debitPremium(sql, context.userId, cost);
         if (!gate.ok) return gate;

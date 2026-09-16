@@ -4,6 +4,7 @@ import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
   ICONS,
+  PREMIUM_TOOLS,
   TONES,
   TOOL_FILTERS,
   iconForCategory,
@@ -40,14 +41,19 @@ import {
   listPaymentClaims,
   reviewPayment,
   saveCryptoSettings,
+  listPremiumMembers,
+  saveToolPrices,
+  listTickets,
+  replyTicket,
 } from "@/lib/premium";
+import { deleteStudioPack, listStudioPacks, saveStudioPack } from "@/lib/packs";
 import { IconBlock } from "@/components/stacks/icon-block";
 import { StacksLogo } from "@/components/stacks/logo";
 import { ThemeToggle } from "@/components/stacks/theme-toggle";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 
-type Tab = "apps" | "tools" | "keys" | "list" | "pay";
+type Tab = "apps" | "tools" | "keys" | "list" | "pay" | "people" | "packs" | "inbox";
 
 export function StudioAdmin() {
   const { user, isPending } = useCurrentUserState();
@@ -149,7 +155,7 @@ export function StudioAdmin() {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {(["apps", "tools", "keys", "list", "pay"] as const).map((id) => (
+          {(["apps", "tools", "keys", "list", "pay", "people", "packs", "inbox"] as const).map((id) => (
             <button
               key={id}
               type="button"
@@ -165,7 +171,13 @@ export function StudioAdmin() {
                   ? `List (${subs.length})`
                   : id === "pay"
                     ? "Premium"
-                    : id}
+                    : id === "people"
+                      ? "Members"
+                      : id === "packs"
+                        ? "Packs"
+                        : id === "inbox"
+                          ? "Inbox"
+                          : id}
             </button>
           ))}
           <button
@@ -198,6 +210,9 @@ export function StudioAdmin() {
         ) : null}
         {tab === "keys" ? <KeysPanel keys={keys} onChange={refresh} onStatus={setStatus} /> : null}
         {tab === "pay" ? <PremiumPanel onStatus={setStatus} /> : null}
+        {tab === "people" ? <MembersPanel /> : null}
+        {tab === "packs" ? <PacksPanel onStatus={setStatus} /> : null}
+        {tab === "inbox" ? <InboxPanel onStatus={setStatus} /> : null}
         {tab === "list" ? (
           <div className="mt-8 glass-card rounded-3xl p-5">
             <h2 className="font-display text-xl font-semibold">New-app updates</h2>
@@ -1051,6 +1066,262 @@ function PremiumPanel({ onStatus }: { onStatus: (s: string) => void }) {
           </article>
         ))}
       </div>
+      <ToolPricesForm onStatus={onStatus} />
     </div>
   );
 }
+
+function ToolPricesForm({ onStatus }: { onStatus: (s: string) => void }) {
+  const [vals, setVals] = useState<Record<string, string>>(() =>
+    Object.fromEntries(PREMIUM_TOOLS.map((t) => [t.id, String(t.cost ?? 1)])),
+  );
+  return (
+    <form
+      className="glass-card space-y-3 rounded-3xl p-5 lg:col-span-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await saveToolPrices({
+          data: {
+            prices: PREMIUM_TOOLS.map((t) => ({
+              toolId: t.id,
+              generations: Math.max(1, parseInt(vals[t.id] || "1", 10) || 1),
+            })),
+          },
+        });
+        onStatus("Per-tool prices saved. Visitors see the new generation cost.");
+      }}
+    >
+      <h2 className="font-display text-xl font-semibold">Price per Premium tool</h2>
+      <p className="text-sm text-muted">Generations deducted on each successful run.</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {PREMIUM_TOOLS.map((t) => (
+          <label key={t.id} className="block text-sm">
+            <span className="text-muted">{t.name}</span>
+            <input
+              className="field mt-1"
+              inputMode="numeric"
+              value={vals[t.id] ?? ""}
+              onChange={(e) => setVals((prev) => ({ ...prev, [t.id]: e.target.value }))}
+            />
+          </label>
+        ))}
+      </div>
+      <button type="submit" className="h-11 rounded-full bg-primary px-5 text-sm font-semibold">
+        Save prices
+      </button>
+    </form>
+  );
+}
+
+function MembersPanel() {
+  const [wallets, setWallets] = useState<{ user_id: string; email: string; generations: number; updated_at: string }[]>([]);
+  const [paid, setPaid] = useState<{ email: string; amount: string; currency: string; status: string; generations_credit: number; created_at: string }[]>([]);
+  useEffect(() => {
+    void listPremiumMembers().then((res) => {
+      setWallets(res.wallets);
+      setPaid(res.paid);
+    });
+  }, []);
+  return (
+    <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="glass-card rounded-3xl p-5">
+        <h2 className="font-display text-xl font-semibold">Premium members</h2>
+        <p className="mt-1 mb-4 text-sm text-muted">Visitor wallets only. They cannot open this console.</p>
+        {wallets.length === 0 ? <p className="text-sm text-dim">None yet.</p> : null}
+        <ul className="space-y-2 text-sm">
+          {wallets.map((w) => (
+            <li key={w.user_id} className="flex justify-between gap-3 border-b border-line py-2">
+              <span className="min-w-0 truncate">{w.email || w.user_id}</span>
+              <span className="text-dim">{w.generations} gen</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="glass-card rounded-3xl p-5">
+        <h2 className="font-display text-xl font-semibold">Paid / claims</h2>
+        {paid.length === 0 ? <p className="text-sm text-dim">None yet.</p> : null}
+        <ul className="space-y-2 text-sm">
+          {paid.map((p, i) => (
+            <li key={`${p.email}-${p.created_at}-${i}`} className="flex justify-between gap-3 border-b border-line py-2">
+              <span className="min-w-0 truncate">
+                {p.email} · {p.amount} {p.currency}
+              </span>
+              <span className="text-dim">{p.status}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function PacksPanel({ onStatus }: { onStatus: (s: string) => void }) {
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof listStudioPacks>>>([]);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [lane, setLane] = useState<"free" | "premium">("free");
+  const [fileUrl, setFileUrl] = useState("");
+  const [cost, setCost] = useState("0");
+  const [cover, setCover] = useState<string | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+
+  async function refresh() {
+    setRows(await listStudioPacks());
+  }
+  useEffect(() => {
+    void refresh().catch((err: unknown) => onStatus(err instanceof Error ? err.message : "Could not load packs"));
+  }, [onStatus]);
+
+  return (
+    <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+      <form
+        className="glass-card space-y-3 rounded-3xl p-5"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await saveStudioPack({
+            data: {
+              id: editing ?? undefined,
+              name,
+              description,
+              lane,
+              fileUrl,
+              cover,
+              cost: Math.max(0, parseInt(cost, 10) || 0),
+              published: true,
+            },
+          });
+          setName("");
+          setDescription("");
+          setFileUrl("");
+          setCover(null);
+          setEditing(null);
+          onStatus("Pack saved. It shows on Sounds & Packs.");
+          await refresh();
+        }}
+      >
+        <h2 className="font-display text-xl font-semibold">{editing ? "Edit pack" : "Place a pack"}</h2>
+        <p className="text-sm text-muted">
+          Your FL Studio files. Paste a download URL (Drive, Dropbox, your CDN). Free downloads now. Premium unlocks from the visitor wallet.
+        </p>
+        <input className="field" required placeholder="Pack name" value={name} onChange={(e) => setName(e.target.value)} />
+        <textarea className="field min-h-20" placeholder="What’s inside" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <select className="field" value={lane} onChange={(e) => setLane(e.target.value as "free" | "premium")}>
+          <option value="free">Free</option>
+          <option value="premium">Premium</option>
+        </select>
+        <input className="field" required placeholder="Download URL" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} />
+        {lane === "premium" ? (
+          <input className="field" placeholder="Generations to unlock" value={cost} onChange={(e) => setCost(e.target.value)} />
+        ) : null}
+        <label className="block text-sm text-muted">
+          Cover
+          <input
+            type="file"
+            accept="image/*"
+            className="mt-2 block w-full text-sm"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 280000) {
+                onStatus("Keep covers under 280KB.");
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => setCover(String(reader.result));
+              reader.readAsDataURL(file);
+            }}
+          />
+        </label>
+        <button type="submit" className="h-11 rounded-full bg-primary px-5 text-sm font-semibold">
+          {editing ? "Save pack" : "Publish pack"}
+        </button>
+      </form>
+      <div className="space-y-3">
+        {rows.length === 0 ? <p className="text-sm text-muted">No packs yet.</p> : null}
+        {rows.map((p) => (
+          <article key={p.id} className="glass-card flex items-center justify-between gap-3 rounded-2xl p-4 text-sm">
+            <div className="min-w-0">
+              <p className="font-semibold">{p.name}</p>
+              <p className="text-dim">
+                {p.lane} {p.cost ? `· ${p.cost} gen` : ""}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="text-primary-bright"
+                onClick={() => {
+                  setEditing(p.id);
+                  setName(p.name);
+                  setDescription(p.description);
+                  setLane(p.lane === "premium" ? "premium" : "free");
+                  setFileUrl(p.file_url);
+                  setCost(String(p.cost));
+                  setCover(p.cover);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="text-muted"
+                onClick={async () => {
+                  await deleteStudioPack({ data: { id: p.id } });
+                  await refresh();
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InboxPanel({ onStatus }: { onStatus: (s: string) => void }) {
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof listTickets>>>([]);
+  const [draft, setDraft] = useState<Record<number, string>>({});
+  async function refresh() {
+    setRows(await listTickets());
+  }
+  useEffect(() => {
+    void refresh().catch((err: unknown) => onStatus(err instanceof Error ? err.message : "Could not load inbox"));
+  }, [onStatus]);
+  return (
+    <div className="mt-8 space-y-3">
+      <h2 className="font-display text-xl font-semibold">Visitor mail</h2>
+      {rows.length === 0 ? <p className="text-sm text-muted">No messages yet.</p> : null}
+      {rows.map((t) => (
+        <article key={t.id} className="glass-card space-y-2 rounded-2xl p-4 text-sm">
+          <p className="font-semibold">
+            {t.subject} · {t.email}
+          </p>
+          <p className="text-muted">{t.body}</p>
+          {t.reply ? <p className="text-primary-bright">Reply: {t.reply}</p> : null}
+          <textarea
+            className="field min-h-20"
+            placeholder="Reply — they see this as a notification"
+            value={draft[t.id] ?? ""}
+            onChange={(e) => setDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
+          />
+          <button
+            type="button"
+            className="h-10 rounded-full bg-primary px-4 text-xs font-semibold"
+            onClick={async () => {
+              const reply = (draft[t.id] || "").trim();
+              if (!reply) return;
+              await replyTicket({ data: { id: t.id, reply } });
+              onStatus("Reply sent. They see it on Account.");
+              await refresh();
+            }}
+          >
+            Send reply
+          </button>
+        </article>
+      ))}
+    </div>
+  );
+}
+

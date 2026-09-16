@@ -36,6 +36,30 @@ async function ensurePremiumTables(
     reviewed_at timestamptz,
     reviewed_by text
   )`;
+  await sql`create table if not exists studio_tool_prices (
+    tool_id text primary key,
+    generations int not null default 1,
+    updated_at timestamptz not null default now()
+  )`;
+  await sql`create table if not exists studio_tickets (
+    id serial primary key,
+    user_id text,
+    email text not null,
+    subject text not null default '',
+    body text not null,
+    status text not null default 'open',
+    reply text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+  )`;
+  await sql`create table if not exists studio_notifications (
+    id serial primary key,
+    user_id text not null,
+    title text not null,
+    body text not null,
+    read boolean not null default false,
+    created_at timestamptz not null default now()
+  )`;
 }
 
 async function setting(
@@ -286,6 +310,14 @@ export const reviewPayment = createServerFn({ method: "POST" })
         email = excluded.email,
         updated_at = now()
     `;
+    await sql`
+      insert into studio_notifications (user_id, title, body)
+      values (
+        ${row.user_id},
+        ${"Payment approved"},
+        ${`${credit} generations landed in your wallet.`}
+      )
+    `;
     return { ok: true as const, credited: credit };
   });
 
@@ -312,11 +344,18 @@ export async function debitPremium(
       error: `This run costs ${cost} generation${cost === 1 ? "" : "s"}. Your wallet has ${have}. Submit a crypto payment and wait for approval.`,
     };
   }
-  await sql`
+  const updated = await sql<{ generations: number }>`
     update studio_wallets
     set generations = generations - ${cost}, updated_at = now()
     where user_id = ${userId} and generations >= ${cost}
+    returning generations
   `;
+  if (!updated[0]) {
+    return {
+      ok: false,
+      error: `This run costs ${cost} generation${cost === 1 ? "" : "s"}. Your wallet cannot cover it right now.`,
+    };
+  }
   return { ok: true };
 }
 
@@ -332,3 +371,163 @@ export const peekPremiumSession = createServerFn({ method: "GET" })
     `;
     return { signedIn: true as const, generations: rows[0]?.generations ?? 0 };
   });
+
+export const publicToolPrices = createServerFn({ method: "GET" }).handler(async () => {
+  const { getSql } = await import("@/lib/db");
+  const sql = await getSql();
+  await ensurePremiumTables(sql);
+  const rows = await sql<{ tool_id: string; generations: number }>`select tool_id, generations from studio_tool_prices`;
+  const map: Record<string, number> = {};
+  for (const row of rows) map[row.tool_id] = row.generations;
+  return map;
+});
+
+export const saveToolPrices = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) =>
+    z
+      .object({
+        prices: z.array(z.object({ toolId: z.string().min(1).max(80), generations: z.number().int().min(1).max(50) })).max(80),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await requireStudioOwner(sql, context.userId);
+    for (const row of data.prices) {
+      await sql`
+        insert into studio_tool_prices (tool_id, generations)
+        values (${row.toolId}, ${row.generations})
+        on conflict (tool_id) do update set generations = excluded.generations, updated_at = now()
+      `;
+    }
+    return { ok: true as const };
+  });
+
+export const listPremiumMembers = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await requireStudioOwner(sql, context.userId);
+    const wallets = await sql<{
+      user_id: string;
+      email: string;
+      generations: number;
+      updated_at: string;
+    }>`select user_id, email, generations, updated_at from studio_wallets order by updated_at desc limit 300`;
+    const paid = await sql<{
+      email: string;
+      amount: string;
+      currency: string;
+      status: string;
+      generations_credit: number;
+      created_at: string;
+    }>`
+      select email, amount, currency, status, generations_credit, created_at
+      from studio_payments order by created_at desc limit 300
+    `;
+    return { wallets, paid };
+  });
+
+export const submitTicket = createServerFn({ method: "POST" })
+  .middleware([optionalAuthMiddleware])
+  .validator((input: unknown) =>
+    z
+      .object({
+        email: z.string().email().max(180),
+        subject: z.string().min(1).max(120),
+        body: z.string().min(4).max(2000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await ensurePremiumTables(sql);
+    await sql`
+      insert into studio_tickets (user_id, email, subject, body, status)
+      values (${context.userId}, ${data.email.trim().toLowerCase()}, ${data.subject.trim()}, ${data.body.trim()}, ${"open"})
+    `;
+    return { ok: true as const };
+  });
+
+export const listTickets = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await requireStudioOwner(sql, context.userId);
+    return sql<{
+      id: number;
+      email: string;
+      subject: string;
+      body: string;
+      status: string;
+      reply: string;
+      created_at: string;
+    }>`select id, email, subject, body, status, reply, created_at from studio_tickets order by created_at desc limit 200`;
+  });
+
+export const replyTicket = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) =>
+    z.object({ id: z.number().int().positive(), reply: z.string().min(1).max(2000) }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await requireStudioOwner(sql, context.userId);
+    const rows = await sql<{ id: number; user_id: string | null; email: string; subject: string }>`
+      select id, user_id, email, subject from studio_tickets where id = ${data.id} limit 1
+    `;
+    const row = rows[0];
+    if (!row) return { ok: false as const, error: "Ticket not found." };
+    await sql`
+      update studio_tickets
+      set reply = ${data.reply.trim()}, status = ${"replied"}, updated_at = now()
+      where id = ${row.id}
+    `;
+    let userId = row.user_id;
+    if (!userId) {
+      const wallets = await sql<{ user_id: string }>`select user_id from studio_wallets where email = ${row.email} limit 1`;
+      userId = wallets[0]?.user_id ?? null;
+    }
+    if (userId) {
+      await sql`
+        insert into studio_notifications (user_id, title, body)
+        values (${userId}, ${"Reply from Stacks"}, ${data.reply.trim()})
+      `;
+    }
+    return { ok: true as const };
+  });
+
+export const myInbox = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await ensurePremiumTables(sql);
+    const notes = await sql<{ id: number; title: string; body: string; read: boolean; created_at: string }>`
+      select id, title, body, read, created_at
+      from studio_notifications where user_id = ${context.userId}
+      order by created_at desc limit 40
+    `;
+    const tickets = await sql<{ id: number; subject: string; status: string; reply: string; created_at: string }>`
+      select id, subject, status, reply, created_at
+      from studio_tickets where user_id = ${context.userId}
+      order by created_at desc limit 20
+    `;
+    return { notes, tickets };
+  });
+
+export const markNotesRead = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+    await sql`update studio_notifications set read = true where user_id = ${context.userId}`;
+    return { ok: true as const };
+  });
+

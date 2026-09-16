@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Copy,
   Download,
@@ -17,10 +17,22 @@ import {
 import { downloadTextResult, downloadUrlFile } from "@/lib/export-result";
 import { pollPublishedVideo, runPublishedTool } from "@/lib/studio";
 import { fillToolTemplate, isPremiumTool, kindForCategory, toolCost, type StacksTool, type ToolKind } from "@/lib/catalog";
+import { publicToolPrices } from "@/lib/premium";
 import { cn } from "@/lib/utils";
 
 const FAV_KEY = "stacks-tool-favs";
 const SAVE_KEY = "stacks-tool-saves";
+
+const SFX_CHIPS = [
+  "Heavy car door slam in a concrete parkade",
+  "Cash register cha-ching, coins drop",
+  "Rain on a tin roof, Lagos night",
+  "Soft expensive UI click",
+  "Distant thunder then a close crack",
+  "Heart beat, close mic, slow",
+  "Camera shutter, mechanical",
+  "Whoosh past the lens, short tail",
+];
 
 function readList(key: string): string[] {
   try {
@@ -51,18 +63,32 @@ function emptyFields(tool: StacksTool): Record<string, string> {
 
 export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind } }) {
   const kind = tool.kind ?? kindForCategory(tool.category);
-  const fieldsDef = tool.inputs?.length ? tool.inputs : null;
+  const premium = isPremiumTool(tool);
+  const isSfx = /sfx|sound|effect/i.test(tool.id) || /sound|effect/i.test(tool.name);
+  const fieldsDef = tool.inputs?.length
+    ? isSfx
+      ? tool.inputs.filter((f) => f.name !== "type" && f.name !== "kind")
+      : tool.inputs
+    : null;
   const [prompt, setPrompt] = useState("");
   const [fields, setFields] = useState<Record<string, string>>(() => emptyFields(tool));
   const [out, setOut] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const premium = isPremiumTool(tool);
-  const cost = toolCost(tool);
+  const [liveCost, setLiveCost] = useState(toolCost(tool));
+  const cost = liveCost;
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [fav, setFav] = useState(() => readList(FAV_KEY).includes(tool.id));
+
+  useEffect(() => {
+    void publicToolPrices()
+      .then((map) => {
+        if (map[tool.id]) setLiveCost(map[tool.id]!);
+      })
+      .catch(() => {});
+  }, [tool.id]);
 
   const canShare = useMemo(
     () => typeof navigator !== "undefined" && typeof navigator.share === "function",
@@ -295,12 +321,20 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
   return (
     <div className="mt-5 space-y-3">
       {premium ? (
-        <p className="rounded-2xl border border-line bg-navy/50 px-4 py-3 text-sm text-muted">
-          Premium · {cost} generation{cost === 1 ? "" : "s"} per run.{" "}
-          <a href="/account" className="font-semibold text-primary-bright">
-            Wallet & payment
-          </a>
-        </p>
+        <div className="rounded-2xl border border-line bg-navy/50 px-4 py-3 text-sm text-muted">
+          <p className="font-semibold text-fg">Visitor wallet — not Super Admin</p>
+          <p className="mt-1">
+            Premium tool · {cost} generation{cost === 1 ? "" : "s"} per run. Register as a visitor, pay in crypto, wait for approval. This login never opens Studio.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a href="/account" className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-xs font-semibold text-fg">
+              Create visitor account
+            </a>
+            <a href="/account" className="inline-flex min-h-10 items-center rounded-full border border-line px-4 text-xs font-semibold">
+              Sign in / wallet
+            </a>
+          </div>
+        </div>
       ) : null}
       {fieldsDef ? (
         <div className="grid gap-3">
@@ -310,7 +344,7 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
                 {field.label}
                 {field.required ? <span className="text-primary-bright"> *</span> : null}
               </span>
-              {field.type === "select" ? (
+              {field.type === "select" && !(isSfx && (field.name === "type" || field.name === "kind")) ? (
                 <select
                   className="field"
                   value={fields[field.name] ?? ""}
@@ -323,10 +357,10 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
                     </option>
                   ))}
                 </select>
-              ) : field.type === "textarea" ? (
+              ) : field.type === "textarea" || (isSfx && (field.name === "prompt" || field.name === "type")) ? (
                 <textarea
                   className="field min-h-24"
-                  placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                  placeholder={field.placeholder || (isSfx ? "Type the sound. Anything. Not a list." : `Enter ${field.label.toLowerCase()}`)}
                   value={fields[field.name] ?? ""}
                   onChange={(e) => setFields((prev) => ({ ...prev, [field.name]: e.target.value }))}
                 />
@@ -341,6 +375,23 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
               )}
             </label>
           ))}
+          {isSfx ? (
+            <div>
+              <p className="mb-2 text-[0.7rem] tracking-[0.14em] text-dim uppercase">Tap an example, or type your own</p>
+              <div className="flex flex-wrap gap-2">
+                {SFX_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    className="rounded-full border border-line px-3 py-1.5 text-left text-xs text-muted hover:border-primary-bright/40 hover:text-fg"
+                    onClick={() => setFields((prev) => ({ ...prev, prompt: chip }))}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <textarea
@@ -381,9 +432,9 @@ export function ToolWorkspace({ tool }: { tool: StacksTool & { kind?: ToolKind }
       {status ? (
         <p className="text-xs text-dim">
           {status}{" "}
-          {status.toLowerCase().includes("account") ? (
-            <a href="/account" className="text-primary-bright">
-              Open Account
+          {status.toLowerCase().includes("account") || status.toLowerCase().includes("register") ? (
+            <a href="/account" className="font-semibold text-primary-bright">
+              Create visitor account
             </a>
           ) : null}
         </p>

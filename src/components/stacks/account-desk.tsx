@@ -7,6 +7,9 @@ import {
   myWallet,
   publicCryptoInfo,
   submitPaymentClaim,
+  submitTicket,
+  myInbox,
+  markNotesRead,
 } from "@/lib/premium";
 import { StacksLogo } from "@/components/stacks/logo";
 import { ThemeToggle } from "@/components/stacks/theme-toggle";
@@ -30,14 +33,21 @@ export function AccountDesk() {
   const [note, setNote] = useState("");
   const [payEmail, setPayEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [notes, setNotes] = useState<{ id: number; title: string; body: string; read: boolean; created_at: string }[]>([]);
+  const [tickets, setTickets] = useState<{ id: number; subject: string; status: string; reply: string; created_at: string }[]>([]);
+  const [subject, setSubject] = useState("");
+  const [ticketBody, setTicketBody] = useState("");
 
   async function load() {
-    const [w, info] = await Promise.all([myWallet(), publicCryptoInfo()]);
+    const [w, info, box] = await Promise.all([myWallet(), publicCryptoInfo(), myInbox()]);
     setGens(w.generations);
     setPayments(w.payments);
     if (w.email) setPayEmail(w.email);
     setAddresses(info.addresses);
     setRate(info.gensPerUsd);
+    setNotes(box.notes);
+    setTickets(box.tickets);
+    if (box.notes.some((n) => !n.read)) void markNotesRead();
   }
 
   useEffect(() => {
@@ -117,17 +127,18 @@ export function AccountDesk() {
         </div>
       </header>
       <main className="relative z-10 mx-auto w-full max-w-3xl px-4 py-12">
-        <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Premium</p>
-        <h1 className="font-display text-4xl font-semibold tracking-tight">Your wallet</h1>
+        <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Visitor account</p>
+        <h1 className="font-display text-4xl font-semibold tracking-tight">Register & wallet</h1>
         <p className="mt-3 max-w-xl text-muted">
-          Register with email. Send crypto to the addresses below. Come back, enter the amount you paid, submit.
-          When the owner approves, generations land here. Premium tools debit this wallet. The free library stays free.
+          This is a visitor login for Premium tools — not Super Admin. Create an email account, send crypto, submit the amount.
+          The owner approves. Generations land here. The owner console stays locked.
         </p>
 
         {isPending ? <p className="mt-8 text-muted">Loading…</p> : null}
 
         {!isPending && !user ? (
-          <div className="mt-8 max-w-md space-y-3">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+            <div className="max-w-md space-y-3">
             {authEnabled ? (
               <>
                 <form onSubmit={(e) => void onAuth(e)} className="space-y-3">
@@ -150,9 +161,10 @@ export function AccountDesk() {
                   />
                   {error ? <p className="text-sm text-rose-400">{error}</p> : null}
                   <button type="submit" disabled={busy} className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-fg">
-                    {busy ? "Working…" : mode === "up" ? "Create account" : "Sign in"}
+                    {busy ? "Working…" : mode === "up" ? "Create visitor account" : "Sign in"}
                   </button>
                 </form>
+                <p className="text-xs text-dim">Visitor only. This login cannot open Studio.</p>
                 <button type="button" className="text-sm text-primary-bright" onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
                   {mode === "in" ? "Need an account? Create one" : "Have an account? Sign in"}
                 </button>
@@ -172,6 +184,15 @@ export function AccountDesk() {
             ) : (
               <p className="text-muted">Sign-in is off in this preview.</p>
             )}
+            </div>
+            <div className="glass-card rounded-3xl p-6">
+              <p className="font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Your wallet</p>
+              <p className="font-display mt-2 text-5xl font-semibold">0</p>
+              <p className="mt-1 text-sm text-muted">generations after the owner approves payment</p>
+              <p className="mt-4 text-sm text-dim">
+                Register as a visitor. This is not Super Admin. Studio stays locked.
+              </p>
+            </div>
           </div>
         ) : null}
 
@@ -230,6 +251,66 @@ export function AccountDesk() {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            <div className="glass-card rounded-3xl p-6">
+              <h2 className="font-display text-xl font-semibold">Notifications</h2>
+              {notes.length === 0 ? <p className="mt-2 text-sm text-muted">None yet. Approvals and replies land here.</p> : null}
+              <ul className="mt-3 space-y-3">
+                {notes.map((n) => (
+                  <li key={n.id} className="rounded-2xl border border-line px-4 py-3">
+                    <p className="text-sm font-semibold">{n.title}</p>
+                    <p className="mt-1 text-sm text-muted">{n.body}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="glass-card rounded-3xl p-6">
+              <h2 className="font-display text-xl font-semibold">Write support</h2>
+              <p className="mt-2 text-sm text-muted">Goes to the owner. Replies show as notifications.</p>
+              <form
+                className="mt-4 space-y-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setBusy(true);
+                  try {
+                    await submitTicket({
+                      data: {
+                        email: payEmail || user.primaryEmail || email,
+                        subject,
+                        body: ticketBody,
+                      },
+                    });
+                    setSubject("");
+                    setTicketBody("");
+                    setStatus("Sent. You’ll see the reply here.");
+                    await load();
+                  } catch (err) {
+                    setStatus(err instanceof Error ? err.message : "Could not send.");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <input className="field" required value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+                <textarea className="field min-h-24" required value={ticketBody} onChange={(e) => setTicketBody(e.target.value)} placeholder="What happened" />
+                <button type="submit" disabled={busy} className="inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-fg">
+                  Send to owner
+                </button>
+              </form>
+              {tickets.length ? (
+                <ul className="mt-4 space-y-2 text-sm">
+                  {tickets.map((t) => (
+                    <li key={t.id} className="rounded-2xl border border-line px-4 py-3">
+                      <p className="font-semibold">
+                        {t.subject} · {t.status}
+                      </p>
+                      {t.reply ? <p className="mt-1 text-muted">{t.reply}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           </div>
         ) : null}
