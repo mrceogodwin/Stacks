@@ -1,0 +1,17 @@
+node_modules/
+.project_id
+.github_repo
+.env
+.env.*
+.vercel/
+artifacts/
+attachments/
+screenshots/
+public/film-clips/
+.grok/preview.log
+.grok/preview.pid
+.grok/status
+.grok/skills/
+.grok/references/
+scripts/__pycache__/
+*.pyc

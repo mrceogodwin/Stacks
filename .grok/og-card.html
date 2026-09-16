@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #000000; }
+    .card {
+      width: 1200px;
+      height: 630px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(820px 460px at 14% -8%, rgba(0, 135, 81, 0.38), transparent 58%),
+        radial-gradient(640px 380px at 92% 10%, rgba(46, 229, 157, 0.18), transparent 52%),
+        radial-gradient(780px 520px at 78% 112%, rgba(0, 135, 81, 0.22), transparent 56%),
+        linear-gradient(180deg, #000000 0%, #02140c 48%, #000000 100%);
+      color: #ffffff;
+      font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+    }
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(46, 229, 157, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 135, 81, 0.055) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse at 50% 48%, #000 12%, transparent 70%);
+    }
+    .glow {
+      position: absolute;
+      left: 50%;
+      top: 46%;
+      width: 560px;
+      height: 300px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(ellipse, rgba(0, 135, 81, 0.36), rgba(46, 229, 157, 0.10) 46%, transparent 70%);
+      filter: blur(10px);
+    }
+    .mark {
+      position: absolute;
+      left: 50%;
+      top: 86px;
+      transform: translateX(-50%);
+      width: 168px;
+      height: 168px;
+      filter: drop-shadow(0 0 28px rgba(46, 229, 157, 0.42));
+    }
+    .lockup {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 180px;
+    }
+    h1 {
+      margin: 92px 0 0;
+      font-size: 112px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      line-height: 1;
+      color: #ffffff;
+      text-indent: 0.18em;
+      text-shadow: 0 0 36px rgba(46, 229, 157, 0.34);
+    }
+    .rule {
+      width: 72px;
+      height: 2px;
+      margin: 22px 0 18px;
+      background: linear-gradient(90deg, #008751, #2EE59D);
+      border-radius: 2px;
+    }
+    .tag {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: #c8f5e3;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="grid"></div>
+    <div class="glow"></div>
+    <svg class="mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <path d="M18 72 L50 90 L82 72" stroke="#008751" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18 54 L50 72 L82 54" stroke="#2EE59D" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18 36 L50 54 L82 36 L50 18 Z" fill="url(#g)" stroke="#2EE59D" stroke-width="3" stroke-linejoin="round"/>
+      <defs>
+        <linearGradient id="g" x1="18" y1="18" x2="82" y2="54" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#2EE59D"/>
+          <stop offset="1" stop-color="#008751"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="lockup">
+      <h1>STACKS</h1>
+      <div class="rule"></div>
+      <p class="tag">One place for everything I build</p>
+    </div>
+  </div>
+</body>
+</html>
