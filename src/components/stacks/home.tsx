@@ -5,7 +5,6 @@ import {
   ChevronDown,
   Download,
   Menu,
-  Play,
   Search,
   X,
 } from "lucide-react";
@@ -361,9 +360,6 @@ export function StacksHome() {
                   aria-label="Play Stacks video"
                 >
                   <img src="/video/poster.jpg?v=14" alt="Hello. Welcome to Stacks." className="film-poster" />
-                  <span className="film-play">
-                    <Play className="ml-0.5 size-7 fill-current" />
-                  </span>
                 </button>
               )}
               <div className="film-meta text-sm">
