@@ -30,42 +30,42 @@ const TOOLS: ToolDef[] = [
     id: "logo-animator",
     name: "Logo to Video Animator",
     tag: "Motion",
-    desc: "Drop a PNG. Animate it. Export video or a clean PNG. Nothing is stored on Stacks.",
+    desc: "Drop a PNG. Animate. Export video or PNG — on-device.",
     icon: Clapperboard,
   },
   {
     id: "caption-studio",
     name: "Video Caption Generator",
     tag: "Captions",
-    desc: "Upload up to 10 minutes. Burn premium captions in the window. CapCut-style stroke, your words.",
+    desc: "Burn captions in-window. CapCut-style stroke.",
     icon: Captions,
   },
   {
     id: "image-editor",
     name: "Stacks Image Editor",
     tag: "Image",
-    desc: "Full window. Tell it what to do: brighten, crop energy, film grain, no background. Download PNG.",
+    desc: "Brighten, crop, grain, cut background. Export PNG.",
     icon: ImageIcon,
   },
   {
     id: "audio-editor",
     name: "Sound & Audio Engine",
     tag: "Audio",
-    desc: "Trim, gain, reverse, export WAV. Manipulates in your browser with the Web Audio API.",
+    desc: "Trim, gain, reverse, export WAV in-browser.",
     icon: AudioLines,
   },
   {
     id: "file-converter",
     name: "File Converter",
     tag: "Convert",
-    desc: "Images, text, and audio you already have. Owner sets the size cap. No server copies.",
+    desc: "Convert images, text, audio. No server copies.",
     icon: FileStack,
   },
   {
     id: "media-import",
     name: "Your Media Import",
     tag: "Files",
-    desc: "Bring files you own. We do not scrape YouTube, TikTok, or Instagram. That would take the platform down.",
+    desc: "Import files you own. No social scraping.",
     icon: Link2,
   },
 ];
@@ -700,11 +700,11 @@ export function FlagshipTools() {
   return (
     <section id="flagship" className="px-4 py-16 sm:px-6">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="flagship-frame">
+        <div className="flagship-shell">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <div className="mb-3 flex items-center gap-2">
-                <span className="grid size-11 place-items-center rounded-2xl bg-primary text-fg shadow-[var(--shadow-glow)]">
+                <span className="grid size-11 place-items-center rounded-2xl bg-white/10 text-fg ring-1 ring-white/10">
                   <Rocket className="size-5" />
                 </span>
                 <p className="font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">Stacks Flagship Tools</p>
@@ -712,13 +712,12 @@ export function FlagshipTools() {
               <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
                 Try the new windows <span className="text-primary-bright">now.</span>
               </h2>
-              <p className="mt-3 text-muted">
-                Full editing windows. Terminal. Export. Files stay on your device so the platform does not overload.
-                Free 30-day trial for registered users after first payment.
+              <p className="mt-3 max-w-xl text-muted">
+                Full editing windows. Terminal. Export. Files stay on your device.
               </p>
             </div>
             <p className="text-sm text-dim">
-              {access.trial ? "Trial active." : access.paid ? "Wallet member." : access.signedIn ? "Signed in. Pay once to unlock the 30-day trial badge." : "Register to keep your seat."}
+              {access.trial ? "Trial active." : access.paid ? "Wallet member." : access.signedIn ? "Signed in." : "Register for trial access."}
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -734,9 +733,9 @@ export function FlagshipTools() {
                     setOpen(tool.id);
                     push(`Opened ${tool.name}`);
                   }}
-                  className="flagship-card text-left"
+                  className="flagship-card glass-card text-left"
                 >
-                  <span className="grid size-12 place-items-center rounded-2xl bg-primary/20 text-primary-bright">
+                  <span className="grid size-12 place-items-center rounded-2xl bg-white/8 text-fg ring-1 ring-white/10">
                     <Icon className="size-5" />
                   </span>
                   <p className="mt-4 text-[0.7rem] tracking-[0.16em] text-primary-bright uppercase">{tool.tag}</p>
