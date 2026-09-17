@@ -25,7 +25,7 @@ type ToolId =
   | "rule3";
 
 const TOOLS: { id: ToolId; name: string; blurb: string }[] = [
-  { id: "calc", name: "Calculator", blurb: "Add, subtract, multiply, divide." },
+  { id: "calc", name: "Scientific Calculator", blurb: "Trig, powers, roots — branded Stacks pad." },
   { id: "percent", name: "Percentage", blurb: "X% of Y, and what percent is X of Y." },
   { id: "discount", name: "Discount", blurb: "Sale price from list and off %." },
   { id: "vat", name: "VAT / tax", blurb: "Nigeria 7.5% default, or your rate." },
@@ -100,11 +100,60 @@ function CalcPad() {
     }
     setExpr((e) => e + k);
   }
+  function sci(fn: string) {
+    try {
+      const v = Number(out);
+      const map: Record<string, number> = {
+        sin: Math.sin((v * Math.PI) / 180),
+        cos: Math.cos((v * Math.PI) / 180),
+        tan: Math.tan((v * Math.PI) / 180),
+        sqrt: Math.sqrt(v),
+        sq: v * v,
+        inv: v === 0 ? NaN : 1 / v,
+        pct: v / 100,
+      };
+      const n = map[fn];
+      setOut(String(n));
+      setExpr(`${fn}(${v})`);
+    } catch {
+      setOut("Error");
+    }
+  }
   const keys = ["7", "8", "9", "/", "4", "5", "6", "*", "1", "2", "3", "-", "0", ".", "C", "+", "="];
+  const sciKeys = [
+    { k: "sin", fn: "sin" },
+    { k: "cos", fn: "cos" },
+    { k: "tan", fn: "tan" },
+    { k: "√", fn: "sqrt" },
+    { k: "x²", fn: "sq" },
+    { k: "1/x", fn: "inv" },
+    { k: "%", fn: "pct" },
+    { k: "π", fn: "pi" },
+  ];
   return (
-    <div>
+    <div className="rounded-2xl bg-gradient-to-b from-white/5 to-black/20 p-3 ring-1 ring-white/10">
+      <p className="font-display mb-1 text-[0.65rem] tracking-[0.2em] text-primary-bright uppercase">Stacks · Scientific</p>
       <p className="mb-2 min-h-6 text-sm text-muted">{expr || " "}</p>
-      <p className="font-display mb-4 text-4xl font-semibold">{out}</p>
+      <p className="font-display mb-4 text-4xl font-semibold tracking-tight drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">{out}</p>
+      <div className="mb-2 grid grid-cols-4 gap-2">
+        {sciKeys.map((s) => (
+          <button
+            key={s.k}
+            type="button"
+            onClick={() => {
+              if (s.fn === "pi") {
+                setExpr((e) => e + String(Math.PI));
+                setOut(String(Math.PI));
+                return;
+              }
+              sci(s.fn);
+            }}
+            className="min-h-10 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-muted"
+          >
+            {s.k}
+          </button>
+        ))}
+      </div>
       <div className="grid grid-cols-4 gap-2">
         {keys.map((k) => (
           <button
@@ -112,8 +161,8 @@ function CalcPad() {
             type="button"
             onClick={() => key(k)}
             className={cn(
-              "min-h-12 rounded-xl border border-line text-sm font-semibold",
-              k === "=" ? "bg-primary text-fg" : "bg-navy",
+              "min-h-12 rounded-xl border text-sm font-semibold",
+              k === "=" ? "border-transparent bg-primary text-fg" : "border-white/10 bg-navy",
             )}
           >
             {k}
@@ -134,6 +183,7 @@ export function DailyTools() {
   const [unitFrom, setUnitFrom] = useState("m");
   const [unitTo, setUnitTo] = useState("ft");
   const [kind, setKind] = useState<"length" | "mass" | "volume" | "temp">("length");
+  const [open, setOpen] = useState(false);
 
   const active = TOOLS.find((t) => t.id === id)!;
 
@@ -429,66 +479,101 @@ export function DailyTools() {
     );
   }
 
+  function openTool(next: ToolId) {
+    setId(next);
+    setA("");
+    setB("");
+    setC("");
+    setText("");
+    setOpen(true);
+  }
+
   return (
     <section id="daily" className="px-4 py-16 sm:px-6">
       <div className="mx-auto w-full max-w-6xl">
         <div className="mb-8">
-          <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-primary-bright uppercase">
-            Everyday Tools Free
+          <p className="mb-2 font-display text-[0.7rem] tracking-[0.22em] text-sky-300/90 uppercase">
+            General Tools
           </p>
           <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-            Everyday Tools <span className="text-primary-bright">&lsquo;Free&rsquo;</span>
+            General Tools <span className="bg-gradient-to-r from-sky-300 to-emerald-300 bg-clip-text text-transparent">Premium free</span>
           </h2>
           <p className="mt-3 max-w-lg text-muted">
-            Calculator, VAT, grades, units, loans. They run in this page, in your browser storage. They open instantly. No API. No keys.
+            Scientific calculator, VAT, grades, units, loans. Tap a card to open it. Runs on-device — no API keys.
           </p>
         </div>
-        <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-          <div>
-            <div className="grid grid-cols-3 gap-2">
-              {TOOLS.slice(0, shown).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setId(t.id);
-                    setA("");
-                    setB("");
-                    setC("");
-                  }}
-                  className={cn(
-                    "min-h-11 rounded-xl border px-2 text-center text-xs font-medium sm:text-sm",
-                    id === t.id ? "border-transparent bg-primary text-fg" : "border-line text-muted",
-                  )}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-            {shown < TOOLS.length ? (
-              <div className="mt-4 flex justify-center">
-                <button
-                  type="button"
-                  className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm font-semibold"
-                  onClick={() => setShown(TOOLS.length)}
-                >
-                  Load more
-                </button>
-              </div>
-            ) : null}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {TOOLS.slice(0, shown).map((tool) => (
+            <button
+              key={tool.id}
+              type="button"
+              onClick={() => openTool(tool.id)}
+              className="glass-card group rounded-2xl p-4 text-left transition duration-300 hover:-translate-y-1"
+            >
+              <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-sky-400/25 via-violet-400/20 to-amber-300/20 text-fg ring-1 ring-white/10">
+                {tool.id === "units" || tool.id === "scale" ? (
+                  <Scale className="size-5" />
+                ) : (
+                  <Calculator className="size-5" />
+                )}
+              </span>
+              <h3 className="font-display mt-3 text-base font-semibold tracking-tight drop-shadow-[0_1px_0_rgba(0,0,0,0.35)] sm:text-lg">
+                {tool.name}
+              </h3>
+              <p className="mt-1 line-clamp-2 text-xs text-muted sm:text-sm">{tool.blurb}</p>
+            </button>
+          ))}
+        </div>
+        {shown < TOOLS.length ? (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm font-semibold"
+              onClick={() => setShown(TOOLS.length)}
+            >
+              Show all tools
+            </button>
           </div>
-          <div className="glass-card rounded-[1.6rem] p-6">
-            <div className="mb-5 flex items-start gap-3">
-              {id === "units" || id === "scale" ? <Scale className="mt-1 size-5 text-primary-bright" /> : <Calculator className="mt-1 size-5 text-primary-bright" />}
-              <div>
-                <h3 className="font-display text-2xl font-semibold">{active.name}</h3>
-                <p className="text-sm text-muted">{active.blurb}</p>
+        ) : null}
+      </div>
+
+      {open ? (
+        <div
+          className="fixed inset-0 z-50 overflow-auto bg-bg-deep/75 p-4 backdrop-blur-xl"
+          onClick={() => setOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="glass-card mx-auto my-8 max-w-lg rounded-3xl p-6 sm:p-8"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="daily-tool-title"
+          >
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-sky-400/30 to-emerald-300/20 ring-1 ring-white/10">
+                  {id === "units" || id === "scale" ? <Scale className="size-5" /> : <Calculator className="size-5" />}
+                </span>
+                <div>
+                  <h3 id="daily-tool-title" className="font-display text-2xl font-semibold tracking-tight">
+                    {active.name}
+                  </h3>
+                  <p className="text-sm text-muted">{active.blurb}</p>
+                </div>
               </div>
+              <button
+                type="button"
+                className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-line text-sm font-semibold"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </button>
             </div>
             {body()}
           </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }
