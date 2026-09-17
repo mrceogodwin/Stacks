@@ -26,7 +26,6 @@ import { AppWorkspace } from "@/components/stacks/app-workspace";
 import { ToolWorkspace } from "@/components/stacks/tool-workspace";
 import { SiteFooter } from "@/components/stacks/site-footer";
 import { SoundsSection } from "@/components/stacks/sounds-section";
-import { InstallSection } from "@/components/stacks/install-section";
 import { publicToolPrices, peekPremiumSession } from "@/lib/premium";
 import { DailyTools } from "@/components/stacks/daily-tools";
 import { FlagshipTools } from "@/components/stacks/flagship-tools";
@@ -45,7 +44,6 @@ const SECTIONS = [
   { id: "daily", label: "Everyday" },
   { id: "sounds", label: "Sound Engine" },
   { id: "community", label: "Community" },
-  { id: "install", label: "Install" },
 ] as const;
 
 export function StacksHome() {
@@ -293,9 +291,6 @@ export function StacksHome() {
             >
               {user || wallet.signedIn ? "Open wallet" : "Register / Sign in"}
             </a>
-            <a href="#install" className="rounded-lg px-3 py-3 text-sm text-muted hover:bg-white/5 hover:text-fg" onClick={() => setMenuOpen(false)}>
-              Add to Home Screen
-            </a>
             <div className="mt-2 flex items-center justify-between px-3 py-2">
               <span className="text-sm text-muted">Skin</span>
               <ThemeToggle />
@@ -319,7 +314,7 @@ export function StacksHome() {
                 </span>
               </h1>
               <p className="mt-6 max-w-md text-muted">
-                Apps, web apps, prototypes, 500+ tools, and the engine that runs them. Proudly developed by Stacks engineers via prompt engineering.
+                Apps, web apps, prototypes, 500+ tools, and the engine that runs them.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -342,8 +337,8 @@ export function StacksHome() {
               {playing ? (
                 <video
                   className="film-well"
-                  src="/video/stacks-in-action.mp4?v=14"
-                  poster="/video/poster.jpg?v=14"
+                  src="/video/stacks-in-action.mp4?v=15"
+                  poster="/video/poster.jpg?v=15"
                   controls
                   autoPlay
                   playsInline
@@ -359,7 +354,12 @@ export function StacksHome() {
                   onClick={() => setPlaying(true)}
                   aria-label="Play Stacks video"
                 >
-                  <img src="/video/poster.jpg?v=14" alt="Hello. Welcome to Stacks." className="film-poster" />
+                  <img src="/video/poster.jpg?v=15" alt="Hello. Welcome to Stacks." className="film-poster" />
+                  <span className="film-play" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" className="ml-0.5 size-7 fill-current" aria-hidden="true">
+                      <path d="M8 5v14l11-7L8 5z" />
+                    </svg>
+                  </span>
                 </button>
               )}
               <div className="film-meta text-sm">
@@ -386,7 +386,7 @@ export function StacksHome() {
                   Apps, web apps, prototypes, we <span className="text-primary-bright">built</span>
                 </h2>
                 <p className="mt-3 max-w-lg text-muted">
-                  Get ZIP files free. Proudly developed by Stacks engineers via prompt engineering.
+                  Get ZIP files free. Built in Nigeria.
                 </p>
               </div>
               <a href="#apps" className="inline-flex items-center gap-1.5 text-sm text-primary-bright">
@@ -715,7 +715,7 @@ export function StacksHome() {
           </div>
         </section>
 
-        <section id="about" className="px-4 pt-10 pb-16 sm:px-6">
+        <section id="about" className="relative z-10 px-4 pt-10 pb-16 sm:px-6">
           <div className="mx-auto w-full max-w-6xl">
             <div className="flex flex-col gap-8 border-b border-white/10 pb-8 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -756,13 +756,8 @@ export function StacksHome() {
                 A public showroom, with a paid engine.
               </h2>
               <p className="mt-3 text-muted">
-                Stacks.ng is a showroom for everything I build. Nigerian-first products,
-                experiments, and a library of tools. Light first. A touch of green. Objects you can pick up
-                and open.
-              </p>
-              <p className="mt-3 text-muted">
-                The 500+ library is open. Premium tools use a wallet you fund in crypto so the engines can
-                keep running.
+                Stacks.ng is a showroom for Nigerian-first products, experiments, and tools.
+                The library is open. Premium tools run on a crypto wallet so the engines stay online.
               </p>
               <p className="mt-4 text-sm text-dim">
                 No app is perfect. By visiting, downloading, or using Stacks, including stacks.ng, you agree
@@ -775,8 +770,9 @@ export function StacksHome() {
         </section>
       </main>
 
-      <CommunitySection />
-      <InstallSection />
+      <div className="relative z-10 bg-bg-deep">
+        <CommunitySection />
+      </div>
       <SiteFooter />
 
       {detail ? (
